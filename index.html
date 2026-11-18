@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ECD Finanças · Fluxo de caixa e contas</title>
+<meta name="description" content="Contas a pagar e receber, fluxo de caixa, cartões, metas e relatórios. Demonstração da ECD Tecnologia.">
+<meta name="theme-color" content="#15110a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="logo.jpg">
+<link rel="apple-touch-icon" href="logo.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="fin.css">
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="#/">
+    <img src="logo.jpg" alt="">
+    <span><b>ECD Finanças</b><small>por ECD Tecnologia</small></span>
+  </a>
+  <nav>
+    <button class="btn sm primary" id="newTop">+ Lançamento</button>
+  </nav>
+</header>
+<div class="demo-bar">Versão de demonstração: os dados ficam salvos só neste navegador e todos os valores são fictícios. <button id="resetDemo" class="link">Restaurar exemplos</button></div>
+<div class="shell">
+  <aside class="side-nav" id="sideNav">
+    <a href="#/" data-r="">▦ Visão geral</a>
+    <a href="#/lancamentos" data-r="lancamentos">⇅ Lançamentos</a>
+    <a href="#/fixas" data-r="fixas">↻ Contas fixas</a>
+    <a href="#/cartoes" data-r="cartoes">▭ Cartões</a>
+    <a href="#/metas" data-r="metas">◎ Metas</a>
+    <a href="#/relatorios" data-r="relatorios">▤ Relatórios</a>
+    <a href="#/importar" data-r="importar">⤓ Importar extrato</a>
+    <a href="#/ajustes" data-r="ajustes">⚙ Ajustes</a>
+  </aside>
+  <main id="view"></main>
+</div>
+<footer class="foot">ECD Tecnologia · Sistemas sob medida · <a href="https://www.instagram.com/ecdtecnologia/" target="_blank" rel="noopener">@ecdtecnologia</a></footer>
+<div id="modal" class="modal" hidden></div>
+<div id="toast" class="toast" hidden></div>
+<script src="vendor/pdf-lib.min.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>
