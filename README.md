@@ -18,7 +18,9 @@
 8. **Relatórios.** Resultado do mês (DRE simplificado), gastos por categoria, centro de custo, cliente e fornecedor, com exportação em **PDF** e **Excel (CSV)**.
 9. **Modo empresa ou pessoal.** Clientes, fornecedores e centros de custo, ou o planejamento da família.
 10. **Acesso com aprovação.** Login com e-mail e senha (criptografada com PBKDF2), cadastro complementar (setor, WhatsApp e campos extras configuráveis) e aprovação do administrador: o pedido chega por e-mail e a liberação é um link assinado digitalmente (Ed25519), que não pode ser falsificado. Funciona no celular e pode ser **instalado como app**.
-11. **Começar do zero.** Quem é aprovado escolhe entre explorar os exemplos ou começar com o próprio dinheiro, com categorias pessoais prontas.
+11. **Lê o comprovante sozinho.** Anexe o PDF (ou a foto) do Pix, transferência ou boleto: o sistema identifica se é entrada ou saída, o valor, a data, quem pagou ou recebeu e sugere a categoria.
+12. **Cria na hora o que faltar.** Toda lista de categoria, cliente, fornecedor e centro de custo tem “+ Nova…”, sem sair do lançamento.
+13. **Começar do zero.** Quem é aprovado escolhe entre explorar os exemplos ou começar com o próprio dinheiro, com categorias pessoais prontas.
 
 Tem ainda a opção **preto e branco**, no menu do usuário, que vale para todos os sistemas ECD.
 
@@ -38,6 +40,7 @@ Tem ainda a opção **preto e branco**, no menu do usuário, que vale para todos
 index.html            # estrutura
 style.css · fin.css   # visual ECD + telas de finanças
 app.js                # regras (caixa, faturas, previsão), telas, relatórios e importação
+comprovante.js        # leitura de comprovantes (pdf.js e OCR)
 ecd-auth.js           # login com senha, cadastro, aprovação assinada e tema (compartilhado)
 sw.js · manifest      # app instalável e uso sem internet
 ```

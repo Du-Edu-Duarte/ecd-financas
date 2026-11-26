@@ -1,6 +1,7 @@
 // ECD Finanças — fluxo de caixa, contas a pagar e receber, cartões, metas e relatórios (demonstração estática)
 // ECD Tecnologia · github.com/Du-Edu-Duarte
 import { configureAuth, guard, authRoute, me, AUTH_ROUTES, takeWelcome } from './ecd-auth.js';
+import { readComprovante } from './comprovante.js';
 const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
 configureAuth({ name: 'ECD Finanças', tagline: 'Seu dinheiro com clareza: o que entra, o que sai e o que sobra.', bullets: ['Contas a pagar e receber no mesmo lugar', 'Previsão dos próximos meses', 'Relatórios em PDF e Excel'], home: '#/' });
 
@@ -91,38 +92,84 @@ function previsto(ym) { // saldo previsto no fim do mês
   for (let m = cur; m <= ym; m = addMonths(m, 1)) { const r = resumoMes(m); s += r.pendEnt - r.pendSai; }
   return s;
 }
+const GUESS = [[/energia|cpfl|enel|eletropaulo|light\b|sabesp|agua|saneamento|internet|vivo fibra|claro|net\b|gas\b|comgas/, /contas da casa|energia/], [/mercado|supermerc|padaria|acougue|hortifruti|ifood|restaurante|lanchonete|pizzaria|atacad|assai|carrefour/, /mercado|aliment/], [/posto|combust|shell|ipiranga|uber|99\b|onibus|metro|estaciona|pedagio/, /transporte|combust/], [/farmacia|drogaria|droga|clinica|hospital|laborat|odonto|consulta/, /saude/], [/aluguel|condominio|imobiliaria|iptu/, /moradia|aluguel/], [/escola|faculdade|curso|udemy|livraria/, /educa/], [/netflix|spotify|disney|amazon prime|youtube|celular|tim\b|recarga/, /celular|assinatura|sistemas/], [/cinema|bar\b|show|ingresso|viagem|hotel/, /lazer/], [/salario|folha|pagamento de salario/, /salario|folha/]];
+function guessCat(text, tipo) { const t = norm(text); for (const [re, cat] of GUESS) if (re.test(t)) { const c = S.categorias.find(x => x.tipo === tipo && cat.test(norm(x.nome))); if (c) return c.id; } return null; }
 function autoCategoria(desc, tipo) { const d = norm(desc); const r = S.regras.find(x => d.includes(norm(x.contem))); if (r) return r.categoria; return (S.categorias.find(c => c.tipo === tipo && /outr/i.test(c.nome)) || S.categorias.find(c => c.tipo === tipo))?.id; }
 
 /* ---------------- modais ---------------- */
 function modal(html, w = 620) { const md = $('#modal'); md.hidden = false; md.className = 'modal'; md.innerHTML = `<div class="box" style="width:min(${w}px,100%)">${html}</div>`; md.onclick = e => { if (e.target === md) closeModal(); }; return md; }
 const closeModal = () => { const md = $('#modal'); md.hidden = true; md.innerHTML = ''; md.onclick = null; };
 function confirmBox(title, text, ok = 'Confirmar') { return new Promise(res => { const md = modal(`<h2 style="margin-bottom:8px">${esc(title)}</h2><p class="mut">${esc(text)}</p><div class="row" style="justify-content:flex-end;margin-top:16px"><button class="btn" data-a="n">Cancelar</button><button class="btn dark" data-a="y">${esc(ok)}</button></div>`, 440); md.onclick = e => { const a = e.target.closest('[data-a]')?.dataset.a; if (!a) return; closeModal(); res(a === 'y'); }; }); }
-const catOpts = (tipo, sel) => S.categorias.filter(c => c.tipo === tipo).map(c => `<option value="${c.id}" ${c.id === sel ? 'selected' : ''}>${esc(c.nome)}</option>`).join('');
+const catOpts = (tipo, sel) => S.categorias.filter(c => c.tipo === tipo).map(c => `<option value="${c.id}" ${c.id === sel ? 'selected' : ''}>${esc(c.nome)}</option>`).join('') + `<option value="__new" data-kind="cat" data-tipo="${tipo}">+ Nova categoria…</option>`;
+const contOpts = (tipo, sel) => `<option value="">—</option>${S.contatos.map(c => `<option value="${c.id}" ${c.id === sel ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}<option value="__new" data-kind="contato" data-tipo="${tipo === 'entrada' ? 'cliente' : 'fornecedor'}">+ Novo ${tipo === 'entrada' ? 'cliente' : 'fornecedor'}…</option>`;
+const centroOpts = sel => `<option value="">—</option>${S.centros.map(c => `<option value="${c.id}" ${c.id === sel ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}<option value="__new" data-kind="centro">+ Novo centro de custo…</option>`;
+/* "+ Nova …" dentro de qualquer lista: cria na hora, sem sair da tela */
+const ADD_LABEL = { cat: 'Nome da nova categoria', contato: 'Nome do cliente ou fornecedor', centro: 'Nome do centro de custo' };
+document.addEventListener('focusin', e => { if (e.target.tagName === 'SELECT' && e.target.value !== '__new') e.target.dataset.prev = e.target.value; });
+document.addEventListener('change', e => { if (e.target.tagName === 'SELECT' && e.target.value !== '__new') e.target.dataset.prev = e.target.value; });
+document.addEventListener('change', e => {
+  const sel = e.target; if (sel.tagName !== 'SELECT' || sel.value !== '__new') return;
+  e.stopImmediatePropagation();
+  const opt = sel.selectedOptions[0]; const kind = opt.dataset.kind, tipo = opt.dataset.tipo;
+  const box = document.createElement('div'); box.className = 'addrow';
+  box.innerHTML = `<input placeholder="${ADD_LABEL[kind]}" maxlength="60"><button type="button" class="btn sm primary">Adicionar</button><button type="button" class="link sm" title="Cancelar">✕</button>`;
+  sel.hidden = true; sel.after(box); const inp = box.querySelector('input'); inp.focus();
+  const close = v => { box.remove(); sel.hidden = false; sel.value = v ?? sel.dataset.prev ?? sel.querySelector('option[selected]')?.value ?? ''; if (sel.selectedIndex < 0 || sel.value === '__new') sel.selectedIndex = 0; if (v) sel.dispatchEvent(new Event('change', { bubbles: true })); };
+  const ok = () => {
+    const nome = inp.value.trim(); if (!nome) return inp.focus();
+    const list = kind === 'cat' ? S.categorias : kind === 'contato' ? S.contatos : S.centros;
+    let it = list.find(x => norm(x.nome) === norm(nome) && (kind !== 'cat' || x.tipo === tipo));
+    if (!it) { it = kind === 'cat' ? { id: uid(), nome, tipo, limite: 0 } : kind === 'contato' ? { id: uid(), nome, tipo } : { id: uid(), nome }; list.push(it); save(); toast(`“${nome}” adicionado`); }
+    // coloca a opção nova em todas as listas iguais da tela
+    document.querySelectorAll(`option[value="__new"][data-kind="${kind}"]${tipo ? `[data-tipo="${tipo}"]` : ''}`).forEach(o => { if (!o.parentElement.querySelector(`option[value="${it.id}"]`)) o.insertAdjacentHTML('beforebegin', `<option value="${it.id}">${esc(it.nome)}</option>`); });
+    close(it.id);
+  };
+  box.querySelector('.primary').onclick = ok; box.querySelector('.link').onclick = () => close();
+  inp.onkeydown = ev => { if (ev.key === 'Enter') { ev.preventDefault(); ok(); } if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); close(); } };
+}, true);
 
 function editLanc(l = null, preset = {}) {
   const isNew = !l; l = l ? { ...l } : { tipo: 'saida', desc: '', valor: '', venc: today(), categoria: '', contato: '', centro: '', ...preset };
   const md = modal(`<div class="eyebrow">${isNew ? 'Novo lançamento' : 'Editar lançamento'}</div><h2 style="margin-bottom:14px">${isNew ? 'O que entrou ou saiu?' : esc(l.desc)}</h2>
   <form id="fL" class="grid">
     <div class="seg" id="tipoSeg"><button type="button" data-t="saida" class="${l.tipo === 'saida' ? 'on' : ''}">↗ Saída / a pagar</button><button type="button" data-t="entrada" class="${l.tipo === 'entrada' ? 'on' : ''}">↙ Entrada / a receber</button></div>
+    <label class="cdrop"><input name="anexo" type="file" accept="image/*,application/pdf" hidden><b>📄 ${l.anexo ? 'Trocar comprovante' : 'Tem o comprovante? Anexe aqui'}</b><span>${l.anexo ? 'Já tem um comprovante anexado.' : 'PDF ou foto do Pix, transferência ou boleto: o sistema lê e preenche tudo.'}</span><em id="cdName"></em></label>
+    <div class="readbox" id="readBox" hidden></div>
     <div class="formgrid">
       <label class="f full">Descrição<input name="desc" required value="${esc(l.desc)}" placeholder="Ex.: Conta de energia, Serviço para cliente"></label>
       <label class="f">Valor (R$)<input name="valor" required inputmode="decimal" value="${l.valor !== '' ? String(l.valor).replace('.', ',') : ''}" placeholder="0,00"></label>
       <label class="f">${l.cartao ? 'Data da compra' : 'Vencimento'}<input name="venc" type="date" required value="${l.venc}"></label>
       <label class="f">Categoria<select name="categoria" id="selCat">${catOpts(l.tipo, l.categoria)}</select></label>
-      ${empresa() ? `<label class="f">${l.tipo === 'entrada' ? 'Cliente' : 'Fornecedor'}<select name="contato"><option value="">—</option>${S.contatos.map(c => `<option value="${c.id}" ${c.id === l.contato ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}</select></label>
-      <label class="f">Centro de custo<select name="centro"><option value="">—</option>${S.centros.map(c => `<option value="${c.id}" ${c.id === l.centro ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}</select></label>` : ''}
+      ${empresa() ? `<label class="f"><span id="contLbl">${l.tipo === 'entrada' ? 'Cliente' : 'Fornecedor'}</span><select name="contato" id="selCont">${contOpts(l.tipo, l.contato)}</select></label>
+      <label class="f">Centro de custo<select name="centro">${centroOpts(l.centro)}</select></label>` : ''}
       ${isNew ? `<label class="f" id="fForma">Forma<select name="forma"><option value="vista">À vista / boleto / Pix</option><option value="parc">Parcelado</option>${S.cartoes.map(c => `<option value="c:${c.id}">Cartão ${esc(c.nome)}</option>`).join('')}<option value="fixa">Repete todo mês (conta fixa)</option></select></label>
       <label class="f" id="fParc" hidden>Parcelas<input name="parcelas" type="number" min="2" max="48" value="10"></label>` : ''}
       <label class="f full">Observação<input name="obs" value="${esc(l.obs || '')}" placeholder="Opcional"></label>
-      <label class="f full">Comprovante (foto ou PDF)<input name="anexo" type="file" accept="image/*,application/pdf">${l.anexo ? `<span class="hint">Já tem um comprovante anexado. Escolha outro para trocar.</span>` : ''}</label>
+      ${isNew ? '<label class="row sm full" style="gap:8px"><input type="checkbox" name="jaPago"> Já foi pago / recebido</label>' : ''}
     </div>
     <div class="hint" id="autoHint"></div>
     <div class="row between">${!isNew ? '<button type="button" class="btn" id="delL">Excluir</button>' : '<span></span>'}<div class="row"><button type="button" class="btn" data-x>Cancelar</button><button class="btn primary">Salvar</button></div></div>
   </form>`);
   const f = $('#fL');
-  $$('#tipoSeg button').forEach(b => b.onclick = () => { l.tipo = b.dataset.t; $$('#tipoSeg button').forEach(x => x.classList.toggle('on', x === b)); $('#selCat').innerHTML = catOpts(l.tipo); suggest(); });
+  $$('#tipoSeg button').forEach(b => b.onclick = () => { l.tipo = b.dataset.t; $$('#tipoSeg button').forEach(x => x.classList.toggle('on', x === b)); $('#selCat').innerHTML = catOpts(l.tipo); const sc = $('#selCont'); if (sc) sc.innerHTML = contOpts(l.tipo, sc.value); const cl = $('#contLbl'); if (cl) cl.textContent = l.tipo === 'entrada' ? 'Cliente' : 'Fornecedor'; suggest(); });
   const suggest = () => { if (!isNew) return; const c = autoCategoria(f.desc.value, l.tipo); const r = S.regras.find(x => norm(f.desc.value).includes(norm(x.contem))); if (r && c) { f.categoria.value = c; $('#autoHint').textContent = `Categoria escolhida pela regra “${r.contem}”.`; } else $('#autoHint').textContent = ''; };
   f.desc.oninput = suggest;
+  const setTipo = t => { const b = $(`#tipoSeg button[data-t="${t}"]`); if (b && l.tipo !== t) b.click(); };
+  f.anexo.onchange = async () => {
+    const file = f.anexo.files[0]; const rb = $('#readBox'); if (!file) return;
+    $('#cdName').textContent = file.name; rb.hidden = false; rb.className = 'readbox'; rb.innerHTML = `<span class="spin"></span> Lendo o comprovante${/^image/.test(file.type) ? ' (foto: pode levar uns segundos)' : ''}…`;
+    let r = null; try { r = await readComprovante(file, me()?.nome || ''); } catch (err) { console.warn(err); }
+    if (!document.body.contains(rb)) return;
+    if (!r || r.vazio || !(r.valor > 0)) { rb.className = 'readbox warn'; rb.innerHTML = 'Não consegui ler os dados desse comprovante. Ele fica anexado: preencha os campos acima.'; return; }
+    if (r.tipo) setTipo(r.tipo);
+    f.valor.value = r.valor.toFixed(2).replace('.', ',');
+    if (r.data) f.venc.value = r.data;
+    if (isNew || !f.desc.value) f.desc.value = r.desc;
+    if (isNew) { const rg = S.regras.find(x => norm(r.desc + ' ' + r.texto).includes(norm(x.contem))); const c = rg?.categoria || guessCat(r.contraparte + ' ' + r.texto, l.tipo) || autoCategoria(r.desc, l.tipo); if (c) f.categoria.value = c; if (f.jaPago) f.jaPago.checked = true; }
+    if (r.contraparte && f.contato) { let k = S.contatos.find(x => norm(x.nome) === norm(r.contraparte)); if (k) f.contato.value = k.id; }
+    rb.className = 'readbox ok';
+    rb.innerHTML = `<b>📄 Comprovante lido</b><span>${r.tipo === 'entrada' ? '↙ Entrada' : r.tipo === 'saida' ? '↗ Saída' : 'Tipo não identificado: escolha acima'}${r.meio ? ' · ' + r.meio : ''} · <b>${money(r.valor)}</b>${r.data ? ' · ' + fmtD(r.data) : ''}${r.contraparte ? ' · ' + esc(r.contraparte) : ''}</span><small>Confira os campos e toque em Salvar.</small>`;
+  };
   if (f.forma) f.forma.onchange = () => { $('#fParc').hidden = f.forma.value !== 'parc'; if (f.forma.value.startsWith('c:')) $('#fParc').hidden = false; };
   $('[data-x]', md).onclick = closeModal;
   const del = $('#delL'); if (del) del.onclick = async () => { if (!(await confirmBox('Excluir lançamento?', l.parcela ? 'Exclui só esta parcela.' : 'Ele sai do fluxo de caixa.', 'Excluir'))) return; S.lancamentos = S.lancamentos.filter(x => x.id !== l.id); save(); route(); toast('Lançamento excluído'); };
@@ -130,13 +177,14 @@ function editLanc(l = null, preset = {}) {
     e.preventDefault(); const valor = parseMoney(f.valor.value); if (!(valor > 0)) return toast('Informe um valor maior que zero');
     const base = { desc: f.desc.value.trim(), tipo: l.tipo, valor, venc: f.venc.value, categoria: f.categoria.value, contato: f.contato?.value || '', centro: f.centro?.value || '', obs: f.obs.value.trim(), por: who() };
     let anexo = l.anexo; const file = f.anexo.files[0]; if (file) { anexo = { id: uid(), nome: file.name, tipo: file.type }; await putFile(anexo.id, file); }
+    const jaPago = f.jaPago?.checked ? { data: f.venc.value, valor, por: who() } : null;
     if (!isNew) { Object.assign(S.lancamentos.find(x => x.id === l.id), base, { anexo }); save(); closeModal(); route(); return toast('Lançamento atualizado'); }
     const forma = f.forma.value;
     if (forma === 'fixa') { const r = { id: uid(), desc: base.desc, tipo: base.tipo, valor, dia: +base.venc.slice(8), categoria: base.categoria, contato: base.contato, centro: base.centro, inicio: ymOf(base.venc) }; S.recorrentes.push(r); ensureMonth(ymOf(base.venc)); save(); closeModal(); route(); return toast('Conta fixa criada: ela aparece todo mês'); }
     const n = forma === 'parc' || forma.startsWith('c:') ? Math.max(1, +f.parcelas.value || 1) : 1; const grupo = uid(); const card = forma.startsWith('c:') ? forma.slice(2) : null;
     for (let i = 0; i < n; i++) {
       const ym = addMonths(ymOf(base.venc), i); const venc = dayIn(ym, +base.venc.slice(8));
-      S.lancamentos.push({ id: uid(), ...base, valor: Math.round(valor / n * 100) / 100, venc, cartao: card, parcela: n > 1 ? { n: i + 1, total: n, grupo } : null, pago: null, anexo: i === 0 ? anexo : null });
+      S.lancamentos.push({ id: uid(), ...base, valor: Math.round(valor / n * 100) / 100, venc, cartao: card, parcela: n > 1 ? { n: i + 1, total: n, grupo } : null, pago: i === 0 && n === 1 && !card ? jaPago : null, anexo: i === 0 ? anexo : null });
     }
     save(); closeModal(); route(); toast(n > 1 ? `${n} parcelas criadas` : card ? 'Compra lançada no cartão' : 'Lançamento salvo');
   };

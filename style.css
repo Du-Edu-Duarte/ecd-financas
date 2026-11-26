@@ -234,3 +234,15 @@ html[data-theme=pb] .badge{border:1px solid currentColor}
 .pw input{border:0!important;flex:1;min-width:0;box-shadow:none!important}
 .pwbar{height:4px;border-radius:4px;background:var(--line);overflow:hidden;margin-top:-6px}.pwbar i{display:block;height:100%;width:0;transition:.2s}
 details summary{cursor:pointer;color:var(--mut)}
+/* listas com "+ Novo…" e leitura de comprovante */
+.addrow{display:flex;gap:8px;align-items:center}
+.addrow input{flex:1;min-width:0;border:1.5px solid var(--gold);border-radius:10px;padding:9px 12px;font:inherit;background:#fff}
+.readbox{display:grid;gap:4px;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--goldbg);font-size:14px}
+.readbox.ok{border-color:#bfe3cf;background:var(--okbg)}
+.readbox.warn{border-color:#f0d9a8;background:var(--warnbg)}
+.readbox small{color:var(--mut)}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--gold);border-right-color:transparent;border-radius:50%;animation:spin .8s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.cdrop{display:grid;gap:2px;border:1.5px dashed var(--gold);border-radius:12px;padding:12px 14px;background:var(--goldbg);cursor:pointer;font-size:14px}
+.cdrop span{color:var(--ink2);font-size:13px}.cdrop em{font-style:normal;font-size:12px;color:var(--mut)}
+.cdrop:hover{background:#f7ead0}
