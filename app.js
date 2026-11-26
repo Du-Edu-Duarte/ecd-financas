@@ -494,6 +494,7 @@ function welcomeModal() {
 /* ---------------- primeiro acesso: passo a passo ---------------- */
 const GUIA = [
   ['Entrar no sistema', [
+    ['Instale o app no celular', 'Assim o ECD Finanças fica na tela inicial, como um aplicativo. No Android (Chrome): menu ⋮ e "Instalar app". No iPhone (Safari): botão Compartilhar e "Adicionar à Tela de Início".', 'instalar'],
     ['Crie sua conta', 'Na tela de entrada, toque em "Criar conta" e informe nome, e-mail e uma senha.'],
     ['Complete o cadastro', 'Preencha setor e WhatsApp (e as perguntas extras, se houver) e toque em "Enviar para aprovação".'],
     ['Aguarde a liberação', 'O administrador recebe o pedido e libera o acesso. Enquanto isso, a tela mostra que o cadastro está em análise. Depois de liberado, entre de novo com e-mail e senha.'],
@@ -513,7 +514,7 @@ const GUIA = [
   ]],
 ];
 function Comecar() {
-  const P = GUIA.flatMap(([bloco, passos]) => passos.map(([t, d]) => ({ bloco, t, d })));
+  const P = GUIA.flatMap(([bloco, passos]) => passos.map(([t, d, acao]) => ({ bloco, t, d, acao })));
   let i = Math.min(Math.max(+(location.hash.split('?p=')[1] || 1) - 1, 0), P.length - 1);
   const draw = () => {
     const p = P[i], fim = i === P.length - 1;
@@ -525,6 +526,7 @@ function Comecar() {
           <span class="wiz-n">${i + 1}</span>
           <h1>${esc(p.t)}</h1>
           <p>${esc(p.d)}</p>
+          ${p.acao === 'instalar' && !isStandalone() ? `<button class="btn" id="wzInst" style="align-self:flex-start">${ic('upload')} Instalar agora</button>` : p.acao === 'instalar' ? '<p class="pos" style="font-weight:700">O app já está instalado neste aparelho.</p>' : ''}
         </div>
         <div class="wiz-dots">${P.map((_, k) => `<button data-k="${k}" class="${k === i ? 'on' : k < i ? 'ok' : ''}" aria-label="Ir para o passo ${k + 1}"></button>`).join('')}</div>
         <div class="wiz-nav">
@@ -536,6 +538,7 @@ function Comecar() {
     const go = k => { i = Math.min(Math.max(k, 0), P.length - 1); draw(); };
     $('#wzBack').onclick = () => go(i - 1);
     if ($('#wzNext')) $('#wzNext').onclick = () => go(i + 1);
+    if ($('#wzInst')) $('#wzInst').onclick = instalar;
     $$('.wiz-dots button').forEach(b => b.onclick = () => go(+b.dataset.k));
     document.onkeydown = e => { if (!$('.wiz')) { document.onkeydown = null; return; } if (e.key === 'ArrowRight') go(i + 1); if (e.key === 'ArrowLeft') go(i - 1); };
   };
@@ -586,6 +589,27 @@ function checkFechamento() {
   try { sessionStorage.setItem('ecd-fech', ym); } catch {}
   fechamentoModal(ym);
 }
+
+/* ---------------- instalar como aplicativo ---------------- */
+let installEvt = null;
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; });
+window.addEventListener('appinstalled', () => { installEvt = null; toast('App instalado na tela inicial'); });
+async function instalar() {
+  if (isStandalone()) return toast('O app já está instalado neste aparelho');
+  if (installEvt) { installEvt.prompt(); const r = await installEvt.userChoice; installEvt = null; if (r.outcome !== 'accepted') toast('Instalação cancelada'); return; }
+  const ios = isIOS();
+  const passos = ios
+    ? ['Abra este site no <b>Safari</b>.', 'Toque no botão <b>Compartilhar</b> (o quadrado com a seta para cima).', 'Role e toque em <b>Adicionar à Tela de Início</b>.', 'Toque em <b>Adicionar</b>. O ícone da ECD aparece na tela inicial.']
+    : ['Abra este site no <b>Chrome</b>.', 'Toque no menu <b>⋮</b> (três pontinhos, no canto de cima).', 'Toque em <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.', 'Confirme. O ícone da ECD aparece na tela inicial.'];
+  modal(`<div class="eyebrow">Instalar no celular</div><h2 style="margin:4px 0 14px">${ios ? 'No iPhone' : 'No Android'}</h2>
+    <div class="steps">${passos.map((t, k) => `<div class="step"><span class="n">${k + 1}</span><div style="padding-top:6px">${t}</div></div>`).join('')}</div>
+    <p class="mut sm" style="margin:12px 0 0">${ios ? 'No Android: Chrome, menu ⋮ e "Instalar app".' : 'No iPhone: Safari, botão Compartilhar e "Adicionar à Tela de Início".'} No computador, use o ícone de instalar na barra de endereço do Chrome ou do Edge.</p>
+    <div style="margin-top:18px;text-align:right"><button class="btn primary" id="instOk">Entendi</button></div>`, 480);
+  $('#instOk').onclick = closeModal;
+}
+$('#instFoot').onclick = e => { e.preventDefault(); instalar(); };
 
 /* ---------------- roteador ---------------- */
 const ROUTES = { '': Visao, lancamentos: Lancamentos, fixas: Fixas, cartoes: Cartoes, metas: Metas, relatorios: Relatorios, importar: Importar, ajustes: Ajustes, comecar: Comecar };
