@@ -100,14 +100,14 @@ export function paintUser() {
   if (!u) return;
   const box = document.createElement('div'); box.id = 'userBox'; box.className = 'userbox';
   box.innerHTML = `<button class="uchip" id="uBtn"><span class="av" style="background:#c8952e;border-color:#2a2213">${initials(u.nome)}</span><span class="un">${esc(u.nome.split(' ')[0])}</span></button>
-    <div class="umenu" hidden><div class="uhead"><b>${esc(u.nome)}</b><span>${esc(u.email)}</span><span>${esc(u.setor || '')}${u.owner ? ' · Dono (acesso total)' : u.role === 'admin' ? ' · Administrador' : ''}</span></div>${u.role === 'admin' && !u.demo ? '<a href="#/config">⚙️ Usuários e aprovações</a>' : ''}${(APP.links || []).map(l => `<a href="${l.href}">${l.text}</a>`).join('')}<button id="themeBtn">◐ Preto e branco: ${isPB() ? 'ligado' : 'desligado'}</button><button id="logout">Sair</button></div>`;
+    <div class="umenu" hidden><div class="uhead"><b>${esc(u.nome)}</b><span>${esc(u.email)}</span><span>${esc(u.setor || '')}${u.owner ? ' · Dono (acesso total)' : u.role === 'admin' ? ' · Administrador' : ''}</span></div>${u.role === 'admin' && !u.demo ? '<a href="#/config">Usuários e aprovações</a>' : ''}${(APP.links || []).map(l => `<a href="${l.href}">${l.text}</a>`).join('')}<button id="themeBtn">Preto e branco: ${isPB() ? 'ligado' : 'desligado'}</button><button id="logout">Sair</button></div>`;
   nav.appendChild(box);
   const m = $('.umenu', box); $('#uBtn').onclick = e => { e.stopPropagation(); m.hidden = !m.hidden; if (!m.hidden) document.addEventListener('click', () => m.hidden = true, { once: true }); };
   $('#logout').onclick = () => { LS.del('session'); paintUser(); location.hash = '#/entrar'; };
   $('#themeBtn').onclick = e => { e.stopPropagation(); toggleTheme(); toast(isPB() ? 'Preto e branco ligado' : 'Cores ligadas'); };
 }
 const steps = n => `<div class="asteps">${['Conta', 'Cadastro', 'Aprovação'].map((s, i) => `<span class="${i < n ? 'done' : i === n ? 'now' : ''}"><b>${i < n ? '✓' : i + 1}</b>${s}</span>`).join('<i></i>')}</div>`;
-const shell = inner => `<div class="auth"><div class="auth-side"><img src="logo.jpg" alt=""><h2>${esc(APP.tagline)}</h2><ul>${APP.bullets.map(b => `<li>${esc(b)}</li>`).join('')}<li>Acesso liberado pela ECD Tecnologia</li></ul><small>${esc(APP.name)} · ECD Tecnologia · <button class="link" style="color:inherit" onclick="window.__ecdTheme()">◐ ${isPB() ? 'Cores' : 'Preto e branco'}</button></small></div><div class="auth-main card">${inner}</div></div>`;
+const shell = inner => `<div class="auth"><div class="auth-side"><img src="logo.jpg" alt=""><h2>${esc(APP.tagline)}</h2><ul>${APP.bullets.map(b => `<li>${esc(b)}</li>`).join('')}<li>Acesso liberado pela ECD Tecnologia</li></ul><small>${esc(APP.name)} · ECD Tecnologia · <button class="link" style="color:inherit" onclick="window.__ecdTheme()">${isPB() ? 'Cores' : 'Preto e branco'}</button></small></div><div class="auth-main card">${inner}</div></div>`;
 const view = () => $('#view');
 const passField = (name, label, ac = 'current-password') => `<label class="f">${label}<span class="pw"><input name="${name}" type="password" autocomplete="${ac}" required minlength="${ac === 'new-password' ? 8 : 1}"><button type="button" class="link sm" data-eye>mostrar</button></span></label>`;
 const wireEyes = () => $$('[data-eye]').forEach(b => b.onclick = () => { const i = b.previousElementSibling; i.type = i.type === 'password' ? 'text' : 'password'; b.textContent = i.type === 'password' ? 'mostrar' : 'ocultar'; });
@@ -259,7 +259,7 @@ export async function Aguardando() {
       ${steps(2)}<div class="eyebrow">Aguardando aprovação</div><h1>Cadastro enviado ✓</h1>
       <p class="mut" style="margin:6px 0 18px">A ECD Tecnologia vai conferir seus dados e liberar o acesso. Quando aprovar, você recebe um <b>link de liberação</b> no WhatsApp <b>${esc(u.whatsapp.replace(/(\d{2})(\d+)(\d{4})$/, '($1) $2-$3'))}</b>. Abra o link <b>neste mesmo aparelho e navegador</b>.</p>
       <div class="card pad" style="background:var(--soft,#faf7f0);display:grid;gap:6px;margin-bottom:16px"><div class="sm mut">Seu cadastro</div><b>${esc(u.nome)}</b><span class="sm">${esc(u.email)} · ${esc(u.setor)}</span><span class="sm">Enviado em ${fmtDT(u.requestedAt)}</span>
-        <span class="sm" id="nst">${n === 'ok' ? '📧 Pedido enviado por e-mail para a ECD.' : n === 'enviando' || !n ? '📧 Enviando pedido por e-mail…' : '⚠️ Não deu para enviar o e-mail agora. Use o botão do WhatsApp abaixo.'}</span></div>
+        <span class="sm" id="nst">${n === 'ok' ? 'Pedido enviado por e-mail para a ECD.' : n === 'enviando' || !n ? 'Enviando pedido por e-mail…' : 'Não deu para enviar o e-mail agora. Use o botão do WhatsApp abaixo.'}</span></div>
       <a class="btn wa" style="width:100%;justify-content:center" href="${wa}" target="_blank" rel="noopener">Avisar a ECD pelo WhatsApp</a>
       <details style="margin-top:16px"><summary class="sm">Já recebeu o link de liberação?</summary><form id="fk" class="row" style="margin-top:10px"><input class="search" name="l" placeholder="Cole o link aqui" style="flex:1" required><button class="btn sm primary">Liberar</button></form></details>
       <div class="row between sm" style="margin-top:18px"><a href="#/perfil">Corrigir cadastro</a><button class="link" id="sair">Sair</button></div>`);
@@ -298,7 +298,7 @@ export async function Aprovar() {
     const d = { id: r.id, email: r.email, at: r.at, role: $('#role').value, nome: r.nome };
     const sig = b64u(await crypto.subtle.sign({ name: 'Ed25519' }, key, enc(approvalMsg(d))));
     const link = `${baseURL()}#/liberar?d=${packJSON(d)}&s=${sig}`; record('aprovado', link);
-    const msg = `Olá, ${r.nome.split(' ')[0]}! Seu acesso ao ${r.app || APP.name} foi aprovado ✅\nAbra este link no mesmo celular/navegador onde você fez o cadastro:\n${link}`;
+    const msg = `Olá, ${r.nome.split(' ')[0]}! Seu acesso ao ${r.app || APP.name} foi aprovado\nAbra este link no mesmo celular/navegador onde você fez o cadastro:\n${link}`;
     $('#out').innerHTML = `<div class="eyebrow">Aprovado ✓</div><h2>Envie o link de liberação</h2><p class="sm mut" style="margin:0">Ele só funciona para ${esc(r.email)} e não pode ser falsificado.</p><textarea class="search" style="height:110px;font-size:12px" readonly>${esc(link)}</textarea><div class="row"><a class="btn wa primary" target="_blank" rel="noopener" href="https://wa.me/${phoneWa(r.whatsapp)}?text=${encodeURIComponent(msg)}">Enviar pelo WhatsApp</a><button class="btn" id="cp">Copiar link</button></div>`;
     $('#cp').onclick = async () => { try { await navigator.clipboard.writeText(link); toast('Link copiado'); } catch { toast('Copie o link na caixa acima'); } };
     toast('Cadastro aprovado');
@@ -315,7 +315,7 @@ export async function Liberar() {
   if (!u) return box('Abra no aparelho do cadastro', `Este link é de <b>${esc(d.email)}</b>, mas o cadastro não está neste aparelho/navegador. Abra o link no mesmo celular e navegador em que você criou a conta.`);
   if (u.requestedAt && d.at !== u.requestedAt && statusOf(u) !== 'ativo') return box('Link antigo', 'Este link é de um pedido anterior. Peça para a ECD aprovar o pedido mais recente.');
   Object.assign(u, { status: 'ativo', role: d.role === 'admin' ? 'admin' : 'user', approvedAt: Date.now(), blocked: false }); saveUser(u); login(u);
-  view().innerHTML = shell(`${steps(3)}<div class="eyebrow">Acesso liberado</div><h1>Bem-vindo, ${esc(u.nome.split(' ')[0])}! 🎉</h1><p class="mut" style="margin:6px 0 22px">Seu acesso ao ${esc(APP.name)} está liberado. Tudo o que você lançar fica salvo neste aparelho.</p><a class="btn primary" href="${APP.home}" id="go">Começar a usar</a>`);
+  view().innerHTML = shell(`${steps(3)}<div class="eyebrow">Acesso liberado</div><h1>Bem-vindo, ${esc(u.nome.split(' ')[0])}!</h1><p class="mut" style="margin:6px 0 22px">Seu acesso ao ${esc(APP.name)} está liberado. Tudo o que você lançar fica salvo neste aparelho.</p><a class="btn primary" href="${APP.home}" id="go">Começar a usar</a>`);
   $('#go').onclick = () => LS.set('welcome', u.id);
 }
 
