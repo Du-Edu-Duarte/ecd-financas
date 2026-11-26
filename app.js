@@ -478,7 +478,7 @@ function blankState() {
 }
 async function startBlank() { blankState(); await idb('kv', 'readwrite', s => s.put(S, 'state')); YM = ymOf(today()); demoBar(); location.hash = '#/'; route(); }
 window.__ecdHasRealData = () => !!S?.real;
-const demoBar = () => { const b = $('.demo-bar'); const r = location.hash.replace(/^#\/?/, '').split(/[?/]/)[0]; if (b) b.hidden = !!S?.real || (me() && !me().demo) || AUTH_ROUTES.includes(r); };
+const demoBar = () => { const b = $('.demo-bar'); const r = location.hash.replace(/^#\/?/, '').split(/[?/]/)[0]; if (b) b.hidden = !!S?.real || (me() && !me().demo) || AUTH_ROUTES.includes(r) || r === 'comecar'; };
 function welcomeModal() {
   const md = modal(`<div class="eyebrow">Acesso liberado</div><h2 style="margin:4px 0 8px">Bem-vindo ao ECD Finanças, ${esc(me().nome.split(' ')[0])}!</h2><p class="mut" style="margin:0 0 18px">Como você quer começar?</p>
     <div class="grid"><button class="btn primary" id="wZero" style="justify-content:flex-start;text-align:left;padding:14px 16px"><span><b>Começar do zero com o meu dinheiro</b><br><small style="opacity:.8">Apaga os exemplos e cria categorias pessoais prontas</small></span></button>
@@ -509,17 +509,33 @@ const GUIA = [
   ]],
 ];
 function Comecar() {
-  let n = 0;
-  view().innerHTML = `
-    <div class="eyebrow">Primeiro acesso</div>
-    <h1>Como usar o ECD Finanças</h1>
-    <p class="mut" style="margin:6px 0 24px;max-width:640px">Siga os passos na ordem. Leva cerca de dez minutos e, depois disso, o sistema está pronto para o dia a dia.</p>
-    ${GUIA.map(([titulo, passos]) => `
-      <section class="card pad guide-sec">
-        <h2>${titulo}</h2>
-        <div class="steps">${passos.map(([t, d]) => { n++; return `<div class="step"><span class="n">${n}</span><div><h3>${t}</h3><p class="mut" style="margin:4px 0 0">${d}</p></div></div>`; }).join('')}</div>
-      </section>`).join('')}
-    <p class="mut sm">Dúvidas sobre o acesso? Fale com o administrador do sistema.</p>`;
+  const P = GUIA.flatMap(([bloco, passos]) => passos.map(([t, d]) => ({ bloco, t, d })));
+  let i = Math.min(Math.max(+(location.hash.split('?p=')[1] || 1) - 1, 0), P.length - 1);
+  const draw = () => {
+    const p = P[i], fim = i === P.length - 1;
+    view().innerHTML = `
+      <div class="wiz card">
+        <div class="wiz-top"><span class="eyebrow" style="margin:0">Primeiro acesso · ${esc(p.bloco)}</span><span class="mut sm">Passo ${i + 1} de ${P.length}</span></div>
+        <div class="bar"><i style="width:${((i + 1) / P.length) * 100}%;background:var(--gold);display:block;height:100%"></i></div>
+        <div class="wiz-body">
+          <span class="wiz-n">${i + 1}</span>
+          <h1>${esc(p.t)}</h1>
+          <p>${esc(p.d)}</p>
+        </div>
+        <div class="wiz-dots">${P.map((_, k) => `<button data-k="${k}" class="${k === i ? 'on' : k < i ? 'ok' : ''}" aria-label="Ir para o passo ${k + 1}"></button>`).join('')}</div>
+        <div class="wiz-nav">
+          <button class="btn" id="wzBack" ${i === 0 ? 'disabled' : ''}>Voltar</button>
+          ${fim ? `<a class="btn primary" href="${me() ? '#/' : '#/entrar'}">${me() ? 'Começar a usar' : 'Ir para a entrada'}</a>` : `<button class="btn primary" id="wzNext">Próximo</button>`}
+        </div>
+      </div>
+      <p class="mut sm" style="text-align:center;margin-top:14px">Dúvidas sobre o acesso? Fale com o administrador do sistema.</p>`;
+    const go = k => { i = Math.min(Math.max(k, 0), P.length - 1); draw(); };
+    $('#wzBack').onclick = () => go(i - 1);
+    if ($('#wzNext')) $('#wzNext').onclick = () => go(i + 1);
+    $$('.wiz-dots button').forEach(b => b.onclick = () => go(+b.dataset.k));
+    document.onkeydown = e => { if (!$('.wiz')) { document.onkeydown = null; return; } if (e.key === 'ArrowRight') go(i + 1); if (e.key === 'ArrowLeft') go(i - 1); };
+  };
+  draw();
 }
 
 /* ---------------- roteador ---------------- */

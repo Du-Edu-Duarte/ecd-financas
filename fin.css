@@ -76,3 +76,20 @@ body.noside .shell{grid-template-columns:1fr}body.noside .side-nav{display:none}
 .guide-sec{margin-bottom:16px}
 .guide-sec>h2{margin-bottom:8px}
 .guide-sec .steps{margin-top:4px}
+/* guia passo a passo: uma etapa por tela */
+.wiz{max-width:680px;margin:0 auto;padding:22px 26px;display:flex;flex-direction:column;gap:18px;min-height:min(520px,calc(100vh - 200px))}
+.wiz-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.wiz .bar{margin:0}
+.wiz-body{flex:1;display:flex;flex-direction:column;justify-content:center;gap:12px;padding:8px 0}
+.wiz-n{width:44px;height:44px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font-weight:800;font-size:17px}
+.wiz-body p{font-size:16.5px;line-height:1.6;color:var(--ink2);margin:0;max-width:56ch}
+.wiz-dots{display:flex;gap:6px;justify-content:center;flex-wrap:wrap}
+.wiz-dots button{width:8px;height:8px;border-radius:50%;border:0;padding:0;background:var(--line);cursor:pointer}
+.wiz-dots button.ok{background:var(--gold2)}
+.wiz-dots button.on{background:var(--ink);width:22px;border-radius:99px}
+.wiz-nav{display:flex;justify-content:space-between;gap:10px}
+.wiz-nav .btn{min-width:120px}
+.wiz-nav .btn:disabled{opacity:.4;cursor:default}
+@media (max-width:600px){.wiz{padding:18px;min-height:calc(100svh - 190px)}.wiz-nav .btn{flex:1;min-width:0}}
+body:has(.wiz) .foot{display:none}
+body:has(.wiz) main{padding-top:18px;padding-bottom:18px}

@@ -1,5 +1,5 @@
 // cache simples para abrir mesmo sem internet
-const C = 'ecd-financas-v4';
+const C = 'ecd-financas-v5';
 const FILES = ['./', 'index.html', 'style.css', 'fin.css', 'app.js', 'ecd-auth.js', 'logo.jpg', 'vendor/pdf-lib.min.js', 'comprovante.js', 'icons.js', 'manifest.webmanifest'];
 self.addEventListener('install', e => e.waitUntil(caches.open(C).then(c => c.addAll(FILES)).then(() => self.skipWaiting())));
 self.addEventListener('activate', e => e.waitUntil(caches.keys().then(k => Promise.all(k.filter(x => x !== C).map(x => caches.delete(x)))).then(() => self.clients.claim())));
