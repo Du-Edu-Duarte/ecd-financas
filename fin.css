@@ -93,3 +93,22 @@ body.noside .shell{grid-template-columns:1fr}body.noside .side-nav{display:none}
 @media (max-width:600px){.wiz{padding:18px;min-height:calc(100svh - 190px)}.wiz-nav .btn{flex:1;min-width:0}}
 body:has(.wiz) .foot{display:none}
 body:has(.wiz) main{padding-top:18px;padding-bottom:18px}
+/* janela do fechamento do mês */
+.modal .box{min-width:0}
+.modal .proj{grid-template-columns:repeat(3,minmax(0,1fr))}
+.modal .proj b{overflow-wrap:anywhere}
+@media (max-width:600px){.modal .proj{gap:6px}.modal .proj div{padding:8px}.modal .proj b{font-size:14px}.modal .proj small{font-size:11px}}
+/* celular: nada pode passar da largura da tela */
+.shell{grid-template-columns:220px minmax(0,1fr)}
+body.noside .shell{grid-template-columns:minmax(0,1fr)}
+.grid>*,.g2>*,.g3>*,.kpis>*{min-width:0}
+.kpi b,.kpi .amt{overflow-wrap:anywhere}
+.chart{overflow:hidden}
+@media (max-width:800px){
+  .shell{grid-template-columns:minmax(0,1fr)}
+  .side-nav{min-width:0;max-width:100vw}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+label.f{min-width:0}
+label.f select,label.f input{min-width:0;max-width:100%}
+@media (max-width:800px){.formgrid{grid-template-columns:minmax(0,1fr)}}

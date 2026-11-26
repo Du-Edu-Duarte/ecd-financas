@@ -341,7 +341,7 @@ function dadosRelatorio(ym) {
 function Relatorios() {
   const d = dadosRelatorio(YM); const res = d.tE - d.tS;
   const tab = (t, arr, tot) => `<div class="card pad"><h3 style="margin-bottom:10px">${t}</h3>${arr.length ? arr.map(([k, v]) => `<div class="lim"><div class="row"><span>${esc(k)}</span><span class="amt">${money(v)}</span></div><div class="bar"><i style="width:${tot ? v / tot * 100 : 0}%"></i></div></div>`).join('') : '<p class="mut sm">Sem dados.</p>'}</div>`;
-  view().innerHTML = `<div class="head"><div><div class="eyebrow">Relatórios</div><h1>Relatórios</h1><p class="mut" style="margin:6px 0 0">Valores pela competência: conta a data de vencimento ou da compra.</p></div><div class="row">${monthNav()}<button class="btn" id="rx">↓ Excel (CSV)</button><button class="btn dark" id="rp">↓ Relatório em PDF</button></div></div>
+  view().innerHTML = `<div class="head"><div><div class="eyebrow">Relatórios</div><h1>Relatórios</h1><p class="mut" style="margin:6px 0 0">Valores pela competência: conta a data de vencimento ou da compra.</p></div><div class="row">${monthNav()}<button class="btn" id="rx">Excel (CSV)</button><button class="btn" id="rp">Baixar PDF</button><button class="btn primary" id="rs">${ic('upload')} Enviar relatório</button></div></div>
   <div class="g2"><div class="card pad"><h2 style="margin-bottom:10px">${empresa() ? 'Resultado do mês (DRE simplificado)' : 'Resumo do mês'}</h2><table class="dre" style="width:100%;border-collapse:collapse">
     <tr><td><b>${empresa() ? 'Receitas' : 'Entradas'}</b></td><td class="pos amt">${money(d.tE)}</td></tr>${d.catE.map(([k, v]) => `<tr><td class="mut" style="padding-left:24px">${esc(k)}</td><td>${money(v)}</td></tr>`).join('')}
     <tr><td><b>${empresa() ? 'Despesas' : 'Saídas'}</b></td><td class="neg amt">− ${money(d.tS)}</td></tr>${d.catS.map(([k, v]) => `<tr><td class="mut" style="padding-left:24px">${esc(k)}</td><td>${money(v)}</td></tr>`).join('')}
@@ -349,6 +349,7 @@ function Relatorios() {
     ${tab('Para onde foi o dinheiro', d.catS, d.tS)}</div>
   ${empresa() ? `<div class="g3">${tab('Por centro de custo', d.cen, d.tS)}${tab('Receita por cliente', d.cli, d.tE)}${tab('Gasto por fornecedor', d.forn, d.tS)}</div>` : ''}`;
   bindMonth(Relatorios);
+  $('#rs').onclick = async () => { const b = $('#rs'); b.disabled = true; try { const r = await enviarRelatorio(YM); if (r) toast(r === 'enviado' ? 'Relatório enviado' : 'Relatório em PDF baixado'); } finally { b.disabled = false; } };
   $('#rx').onclick = () => exportCSV(d.comp, `relatorio-${YM}.csv`);
   $('#rp').onclick = async () => { const b = $('#rp'); b.disabled = true; try { download(await relatorioPDF(YM), `relatorio-${YM}.pdf`, 'application/pdf'); toast('Relatório em PDF baixado'); } finally { b.disabled = false; } };
 }
@@ -412,6 +413,7 @@ function Ajustes() {
       <table class="items"><thead><tr><th>Categoria</th><th>Tipo</th><th>Limite por mês</th><th></th></tr></thead><tbody>${S.categorias.map(c => `<tr><td><input data-cn="${c.id}" value="${esc(c.nome)}"></td><td class="sm">${c.tipo === 'entrada' ? 'Entrada' : 'Saída'}</td><td>${c.tipo === 'saida' ? `<input data-cl="${c.id}" value="${c.limite ? String(c.limite).replace('.', ',') : ''}" placeholder="sem limite">` : ''}</td><td><button class="link" data-rm="categorias:${c.id}">✕</button></td></tr>`).join('')}</tbody></table>
       <form id="fCat" class="row"><input class="search" name="n" placeholder="Nova categoria" required><select class="sel" name="t"><option value="saida">Saída</option><option value="entrada">Entrada</option></select><button class="btn sm">+ Adicionar</button></form></div>
   </div><div class="grid">
+    <div class="card pad grid"><h2>Relatório do fim do mês</h2><p class="hint" style="margin:-6px 0 0">No último dia do mês, e na primeira vez que você abrir o sistema no mês seguinte, o relatório do mês aparece pronto para enviar por WhatsApp, e-mail ou baixar em PDF.</p><label style="display:flex;gap:10px;align-items:center;font-weight:600"><input type="checkbox" id="aFech" ${fech().auto !== false ? 'checked' : ''}> Preparar o relatório todo fim de mês</label>${Object.keys(fech().enviados).length ? `<div class="due">${Object.entries(fech().enviados).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 6).map(([ym, dt]) => `<div class="row between" style="padding:8px 0;border-bottom:1px solid var(--line)"><span><b>${monthName(ym)}</b><br><small class="mut">enviado em ${fmtD(dt)}</small></span><button class="btn sm" data-fm="${ym}">Enviar de novo</button></div>`).join('')}</div>` : ''}</div>
     <div class="card pad grid"><h2>${S.real ? 'Recomeçar' : 'Usar com o meu dinheiro'}</h2><p class="hint" style="margin:-6px 0 0">${S.real ? 'Apaga todos os lançamentos, cartões e metas deste aparelho e começa de novo.' : 'Apaga os dados de exemplo e começa do zero com categorias pessoais.'}</p><button class="btn ${S.real ? '' : 'primary'}" id="aZero" style="justify-self:start">${S.real ? 'Apagar tudo e recomeçar' : 'Começar do zero'}</button></div>
     <div class="card pad grid"><h2>Regras de categoria</h2><p class="hint" style="margin:-6px 0 0">Quando a descrição tiver o texto, a categoria é escolhida sozinha (no lançamento e na importação do extrato).</p>
       ${S.regras.map((r, k) => `<div class="row between sm"><span>Contém <b>“${esc(r.contem)}”</b> → ${esc(cat(r.categoria).nome)}</span><button class="link" data-rr="${k}">✕</button></div>`).join('')}
@@ -419,6 +421,8 @@ function Ajustes() {
     ${empresa() ? `<div class="card pad grid"><h2>Clientes e fornecedores</h2>${tagList(S.contatos, 'contatos', x => ` <span class="mut sm">${x.tipo}</span>`)}<form id="fK" class="row"><input class="search" name="n" placeholder="Nome" required><select class="sel" name="t"><option value="cliente">cliente</option><option value="fornecedor">fornecedor</option></select><button class="btn sm">+</button></form></div>
     <div class="card pad grid"><h2>Centros de custo</h2>${tagList(S.centros, 'centros')}<form id="fCc" class="row"><input class="search" name="n" placeholder="Ex.: Obra Centro, Administrativo" required><button class="btn sm">+</button></form></div>` : ''}
   </div></div>`;
+  $('#aFech').onchange = e => { fech().auto = e.target.checked; save(); toast(e.target.checked ? 'Relatório do fim do mês ligado' : 'Relatório do fim do mês desligado'); };
+  $$('[data-fm]').forEach(b => b.onclick = async () => { const r = await enviarRelatorio(b.dataset.fm); if (r) toast(r === 'enviado' ? 'Relatório enviado' : 'Relatório em PDF baixado'); });
   $('#aZero').onclick = async () => { if (!(await confirmBox(S.real ? 'Apagar tudo?' : 'Começar do zero?', S.real ? 'Todos os seus lançamentos, cartões e metas deste aparelho serão apagados. Não dá para desfazer.' : 'Os dados de exemplo serão apagados e você começa com categorias pessoais.', S.real ? 'Apagar tudo' : 'Começar do zero'))) return; await startBlank(); toast('Tudo pronto para começar'); };
   $('#aN').onchange = e => { S.nome = e.target.value; save(); }; $('#aM').onchange = e => { S.modo = e.target.value; save(); Ajustes(); toast(empresa() ? 'Modo empresa' : 'Modo pessoal'); };
   $('#aS').onchange = e => { S.saldoInicial.valor = parseMoney(e.target.value); save(); }; $('#aD').onchange = e => { S.saldoInicial.data = e.target.value; save(); };
@@ -538,6 +542,51 @@ function Comecar() {
   draw();
 }
 
+/* ---------------- fechamento do mês: relatório pronto para enviar ---------------- */
+const fech = () => (S.fechamento ||= { auto: true, enviados: {} });
+function mesParaFechar() {
+  if (!me() || !S || fech().auto === false) return null;
+  const cur = ymOf(today());
+  const cands = new Date().getDate() === lastDay(cur) ? [cur, addMonths(cur, -1)] : [addMonths(cur, -1)];
+  return cands.find(ym => !fech().enviados[ym] && S.lancamentos.some(l => ymOf(l.venc || '') === ym)) || null;
+}
+// compartilha o PDF (no celular abre WhatsApp, e-mail etc.); sem suporte, baixa o arquivo
+async function enviarRelatorio(ym) {
+  const nome = `relatorio-financeiro-${ym}.pdf`;
+  const bytes = await relatorioPDF(ym);
+  const file = new File([bytes], nome, { type: 'application/pdf' });
+  const d = dadosRelatorio(ym);
+  const texto = `Relatório financeiro de ${monthName(ym)}\nEntradas: ${money(d.tE)}\nSaídas: ${money(d.tS)}\n${empresa() ? 'Resultado' : 'Sobrou'}: ${money(d.tE - d.tS)}`;
+  let modo = 'baixado';
+  if (navigator.canShare?.({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: `Relatório de ${monthName(ym)}`, text: texto }); modo = 'enviado'; }
+    catch (e) { if (e.name === 'AbortError') return null; download(bytes, nome, 'application/pdf'); }
+  } else download(bytes, nome, 'application/pdf');
+  fech().enviados[ym] = today(); save();
+  return modo;
+}
+function fechamentoModal(ym) {
+  const d = dadosRelatorio(ym), res = d.tE - d.tS, hoje = ym === ymOf(today());
+  const md = modal(`<div class="eyebrow">Fechamento do mês</div><h2 style="margin:4px 0 6px">Relatório de ${monthName(ym)}</h2>
+    <p class="mut" style="margin:0 0 16px">${hoje ? 'O mês termina hoje.' : 'O mês terminou.'} O relatório em PDF está pronto para enviar.</p>
+    <div class="proj" style="margin:0 0 18px"><div><small>Entradas</small><b class="pos">${money(d.tE)}</b></div><div><small>Saídas</small><b class="neg">${money(d.tS)}</b></div><div><small>${empresa() ? 'Resultado' : 'Sobrou'}</small><b class="${res < 0 ? 'neg' : 'pos'}">${money(res)}</b></div></div>
+    <div class="grid" style="gap:8px"><button class="btn primary" id="fcShare">${ic('upload')} Enviar relatório</button>
+    <div class="row" style="gap:8px"><button class="btn" id="fcPdf" style="flex:1">Baixar PDF</button><button class="btn" id="fcXls" style="flex:1">Baixar Excel</button></div></div>
+    <div class="row between" style="margin-top:16px"><button class="link" id="fcDepois">Lembrar depois</button><a href="#/ajustes" class="mut sm">Desligar este aviso</a></div>`, 520);
+  const marca = () => { fech().enviados[ym] = today(); save(); };
+  $('#fcShare', md).onclick = async e => { const b = e.currentTarget; b.disabled = true; try { const r = await enviarRelatorio(ym); if (r) { closeModal(); toast(r === 'enviado' ? 'Relatório enviado' : 'Relatório em PDF baixado'); } } catch { toast('Não foi possível gerar o relatório'); } finally { b.disabled = false; } };
+  $('#fcPdf', md).onclick = async () => { download(await relatorioPDF(ym), `relatorio-financeiro-${ym}.pdf`, 'application/pdf'); marca(); closeModal(); toast('Relatório em PDF baixado'); };
+  $('#fcXls', md).onclick = () => { exportCSV(dadosRelatorio(ym).comp, `relatorio-financeiro-${ym}.csv`); marca(); closeModal(); };
+  $('#fcDepois', md).onclick = closeModal;
+}
+function checkFechamento() {
+  const ym = mesParaFechar(); if (!ym) return;
+  let visto = ''; try { visto = sessionStorage.getItem('ecd-fech') || ''; } catch {}
+  if (visto === ym) return;
+  try { sessionStorage.setItem('ecd-fech', ym); } catch {}
+  fechamentoModal(ym);
+}
+
 /* ---------------- roteador ---------------- */
 const ROUTES = { '': Visao, lancamentos: Lancamentos, fixas: Fixas, cartoes: Cartoes, metas: Metas, relatorios: Relatorios, importar: Importar, ajustes: Ajustes, comecar: Comecar };
 async function route() {
@@ -545,7 +594,7 @@ async function route() {
   if (!guard(h[0], ['comecar'])) return;
   const logged = !!me(); document.body.classList.toggle('noside', !logged || AUTH_ROUTES.includes(h[0])); demoBar();
   $$('#sideNav a').forEach(a => a.classList.toggle('on', a.dataset.r === h[0])); $('#modal').hidden = true; window.scrollTo(0, 0);
-  try { if (authRoute(h[0])) return; (ROUTES[h[0]] || Visao)(); if (takeWelcome() && !S.real) welcomeModal(); } catch (e) { console.error(e); view().innerHTML = `<div class="card pad"><h2>Algo deu errado</h2><p class="mut">${esc(e.message || e)}</p></div>`; }
+  try { if (authRoute(h[0])) return; (ROUTES[h[0]] || Visao)(); if (takeWelcome() && !S.real) welcomeModal(); else if (h[0] !== 'comecar') checkFechamento(); } catch (e) { console.error(e); view().innerHTML = `<div class="card pad"><h2>Algo deu errado</h2><p class="mut">${esc(e.message || e)}</p></div>`; }
 }
 const NAV = [['', 'Visão geral', 'home'], ['lancamentos', 'Lançamentos', 'arrows'], ['fixas', 'Contas fixas', 'repeat'], ['cartoes', 'Cartões', 'card'], ['metas', 'Metas', 'target'], ['relatorios', 'Relatórios', 'file'], ['importar', 'Importar extrato', 'upload'], ['ajustes', 'Ajustes', 'sliders'], ['comecar', 'Como usar', 'book']];
 $('#sideNav').innerHTML = NAV.map(([r, l, i]) => `<a href="#/${r}" data-r="${r}">${ic(i)}<span>${l}</span></a>`).join('');
