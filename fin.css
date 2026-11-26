@@ -112,3 +112,7 @@ body.noside .shell{grid-template-columns:minmax(0,1fr)}
 label.f{min-width:0}
 label.f select,label.f input{min-width:0;max-width:100%}
 @media (max-width:800px){.formgrid{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:600px){
+  .modal .proj b{font-size:13px;white-space:nowrap;overflow-wrap:normal}
+  .kpi b{font-size:clamp(17px,5.4vw,24px);white-space:nowrap}
+}
