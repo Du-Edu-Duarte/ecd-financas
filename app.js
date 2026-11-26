@@ -1,6 +1,6 @@
 // ECD Finanças — fluxo de caixa, contas a pagar e receber, cartões, metas e relatórios (demonstração estática)
 // ECD Tecnologia · github.com/Du-Edu-Duarte
-import { configureAuth, guard, authRoute, me } from './ecd-auth.js';
+import { configureAuth, guard, authRoute, me, AUTH_ROUTES, takeWelcome } from './ecd-auth.js';
 const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
 configureAuth({ name: 'ECD Finanças', tagline: 'Seu dinheiro com clareza: o que entra, o que sai e o que sobra.', bullets: ['Contas a pagar e receber no mesmo lugar', 'Previsão dos próximos meses', 'Relatórios em PDF e Excel'], home: '#/' });
 
@@ -363,12 +363,14 @@ function Ajustes() {
       <table class="items"><thead><tr><th>Categoria</th><th>Tipo</th><th>Limite por mês</th><th></th></tr></thead><tbody>${S.categorias.map(c => `<tr><td><input data-cn="${c.id}" value="${esc(c.nome)}"></td><td class="sm">${c.tipo === 'entrada' ? 'Entrada' : 'Saída'}</td><td>${c.tipo === 'saida' ? `<input data-cl="${c.id}" value="${c.limite ? String(c.limite).replace('.', ',') : ''}" placeholder="sem limite">` : ''}</td><td><button class="link" data-rm="categorias:${c.id}">✕</button></td></tr>`).join('')}</tbody></table>
       <form id="fCat" class="row"><input class="search" name="n" placeholder="Nova categoria" required><select class="sel" name="t"><option value="saida">Saída</option><option value="entrada">Entrada</option></select><button class="btn sm">+ Adicionar</button></form></div>
   </div><div class="grid">
+    <div class="card pad grid"><h2>${S.real ? 'Recomeçar' : 'Usar com o meu dinheiro'}</h2><p class="hint" style="margin:-6px 0 0">${S.real ? 'Apaga todos os lançamentos, cartões e metas deste aparelho e começa de novo.' : 'Apaga os dados de exemplo e começa do zero com categorias pessoais.'}</p><button class="btn ${S.real ? '' : 'primary'}" id="aZero" style="justify-self:start">${S.real ? 'Apagar tudo e recomeçar' : 'Começar do zero'}</button></div>
     <div class="card pad grid"><h2>Regras de categoria</h2><p class="hint" style="margin:-6px 0 0">Quando a descrição tiver o texto, a categoria é escolhida sozinha (no lançamento e na importação do extrato).</p>
       ${S.regras.map((r, k) => `<div class="row between sm"><span>Contém <b>“${esc(r.contem)}”</b> → ${esc(cat(r.categoria).nome)}</span><button class="link" data-rr="${k}">✕</button></div>`).join('')}
       <form id="fRg" class="row"><input class="search" name="c" placeholder="Texto (ex.: uber)" required style="min-width:120px"><select class="sel" name="k">${S.categorias.map(c => `<option value="${c.id}">${esc(c.nome)}</option>`).join('')}</select><button class="btn sm">+ Regra</button></form></div>
     ${empresa() ? `<div class="card pad grid"><h2>Clientes e fornecedores</h2>${tagList(S.contatos, 'contatos', x => ` <span class="mut sm">${x.tipo}</span>`)}<form id="fK" class="row"><input class="search" name="n" placeholder="Nome" required><select class="sel" name="t"><option value="cliente">cliente</option><option value="fornecedor">fornecedor</option></select><button class="btn sm">+</button></form></div>
     <div class="card pad grid"><h2>Centros de custo</h2>${tagList(S.centros, 'centros')}<form id="fCc" class="row"><input class="search" name="n" placeholder="Ex.: Obra Centro, Administrativo" required><button class="btn sm">+</button></form></div>` : ''}
   </div></div>`;
+  $('#aZero').onclick = async () => { if (!(await confirmBox(S.real ? 'Apagar tudo?' : 'Começar do zero?', S.real ? 'Todos os seus lançamentos, cartões e metas deste aparelho serão apagados. Não dá para desfazer.' : 'Os dados de exemplo serão apagados e você começa com categorias pessoais.', S.real ? 'Apagar tudo' : 'Começar do zero'))) return; await startBlank(); toast('Tudo pronto para começar'); };
   $('#aN').onchange = e => { S.nome = e.target.value; save(); }; $('#aM').onchange = e => { S.modo = e.target.value; save(); Ajustes(); toast(empresa() ? 'Modo empresa' : 'Modo pessoal'); };
   $('#aS').onchange = e => { S.saldoInicial.valor = parseMoney(e.target.value); save(); }; $('#aD').onchange = e => { S.saldoInicial.data = e.target.value; save(); };
   $$('[data-cn]').forEach(i => i.onchange = () => { S.categorias.find(c => c.id === i.dataset.cn).nome = i.value; save(); });
@@ -418,14 +420,32 @@ function seedState() {
   void ontem;
 }
 
+/* ---------------- começar do zero (dados reais) ---------------- */
+function blankState() {
+  const C = (nome, tipo) => ({ id: uid(), nome, tipo, limite: 0 });
+  const cats = [C('Salário', 'entrada'), C('Freelas e extras', 'entrada'), C('Outras entradas', 'entrada'), C('Moradia', 'saida'), C('Mercado e alimentação', 'saida'), C('Transporte', 'saida'), C('Contas da casa (luz, água, internet)', 'saida'), C('Celular e assinaturas', 'saida'), C('Saúde', 'saida'), C('Educação', 'saida'), C('Lazer', 'saida'), C('Compras', 'saida'), C('Outras saídas', 'saida')];
+  const g = n => cats.find(c => c.nome.startsWith(n)).id;
+  S = { v: 3, real: true, modo: 'pessoal', nome: me()?.nome || 'Minhas finanças', saldoInicial: { valor: 0, data: dayIn(ymOf(today()), 1) }, categorias: cats, contatos: [], centros: [], cartoes: [], recorrentes: [], gerados: [], lancamentos: [], metas: [], regras: [{ contem: 'uber', categoria: g('Transporte') }, { contem: 'ifood', categoria: g('Mercado') }, { contem: 'netflix', categoria: g('Celular') }, { contem: 'spotify', categoria: g('Celular') }], faturasPagas: {} };
+}
+async function startBlank() { blankState(); await idb('kv', 'readwrite', s => s.put(S, 'state')); YM = ymOf(today()); demoBar(); location.hash = '#/'; route(); }
+window.__ecdHasRealData = () => !!S?.real;
+const demoBar = () => { const b = $('.demo-bar'); const r = location.hash.replace(/^#\/?/, '').split(/[?/]/)[0]; if (b) b.hidden = !!S?.real || (me() && !me().demo) || AUTH_ROUTES.includes(r); };
+function welcomeModal() {
+  const md = modal(`<div class="eyebrow">Acesso liberado</div><h2 style="margin:4px 0 8px">Bem-vindo ao ECD Finanças, ${esc(me().nome.split(' ')[0])}!</h2><p class="mut" style="margin:0 0 18px">Como você quer começar?</p>
+    <div class="grid"><button class="btn primary" id="wZero" style="justify-content:flex-start;text-align:left;padding:14px 16px"><span><b>Começar do zero com o meu dinheiro</b><br><small style="opacity:.8">Apaga os exemplos e cria categorias pessoais prontas</small></span></button>
+    <button class="btn" id="wDemo" style="justify-content:flex-start;text-align:left;padding:14px 16px"><span><b>Explorar os exemplos primeiro</b><br><small class="mut">Você pode zerar depois em Ajustes</small></span></button></div>`, 520);
+  $('#wZero', md).onclick = async () => { closeModal(); await startBlank(); toast('Pronto! Comece lançando seu saldo em Ajustes ou o primeiro gasto em + Lançamento'); };
+  $('#wDemo', md).onclick = closeModal;
+}
+
 /* ---------------- roteador ---------------- */
 const ROUTES = { '': Visao, lancamentos: Lancamentos, fixas: Fixas, cartoes: Cartoes, metas: Metas, relatorios: Relatorios, importar: Importar, ajustes: Ajustes };
 async function route() {
   const h = location.hash.replace(/^#\/?/, '').split('?')[0].split('/');
   if (!guard(h[0])) return;
-  const logged = !!me(); document.body.classList.toggle('noside', !logged || ['config', 'entrar', 'cadastro', 'codigo'].includes(h[0]));
+  const logged = !!me(); document.body.classList.toggle('noside', !logged || AUTH_ROUTES.includes(h[0])); demoBar();
   $$('#sideNav a').forEach(a => a.classList.toggle('on', a.dataset.r === h[0])); $('#modal').hidden = true; window.scrollTo(0, 0);
-  try { if (authRoute(h[0])) return; (ROUTES[h[0]] || Visao)(); } catch (e) { console.error(e); view().innerHTML = `<div class="card pad"><h2>Algo deu errado</h2><p class="mut">${esc(e.message || e)}</p></div>`; }
+  try { if (authRoute(h[0])) return; (ROUTES[h[0]] || Visao)(); if (takeWelcome() && !S.real) welcomeModal(); } catch (e) { console.error(e); view().innerHTML = `<div class="card pad"><h2>Algo deu errado</h2><p class="mut">${esc(e.message || e)}</p></div>`; }
 }
 $('#newTop').onclick = () => me() && editLanc();
 $('#resetDemo').onclick = async () => { if (!(await confirmBox('Restaurar exemplos?', 'Apaga os lançamentos deste navegador e recoloca os dados fictícios de exemplo.', 'Restaurar'))) return; seedState(); await idb('kv', 'readwrite', s => s.put(S, 'state')); YM = ymOf(today()); location.hash = '#/'; route(); };
