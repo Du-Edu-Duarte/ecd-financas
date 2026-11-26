@@ -494,8 +494,8 @@ function welcomeModal() {
 /* ---------------- primeiro acesso: passo a passo ---------------- */
 const GUIA = [
   ['Entrar no sistema', [
-    ['Crie sua conta', 'Na tela de entrada, toque em "Criar conta". Informe nome, setor, e-mail e senha. Se houver perguntas extras, elas aparecem no mesmo formulário.'],
-    ['Confirme o e-mail', 'Digite o código que chega no seu e-mail. Sem o código, a conta ainda não está pronta.'],
+    ['Crie sua conta', 'Na tela de entrada, toque em "Criar conta" e informe nome, e-mail e uma senha.'],
+    ['Complete o cadastro', 'Preencha setor e WhatsApp (e as perguntas extras, se houver) e toque em "Enviar para aprovação".'],
     ['Aguarde a liberação', 'O administrador recebe o pedido e libera o acesso. Enquanto isso, a tela mostra que o cadastro está em análise. Depois de liberado, entre de novo com e-mail e senha.'],
   ]],
   ['Preparar o sistema', [
