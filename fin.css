@@ -65,3 +65,14 @@ body.noside .shell{grid-template-columns:1fr}body.noside .side-nav{display:none}
   .proj{grid-template-columns:1fr 1fr 1fr}.formgrid{grid-template-columns:1fr}
   .monthnav b{min-width:120px}
 }
+
+/* menu e ícones */
+.side-nav a{display:flex;align-items:center;gap:10px}
+.side-nav a svg{flex:none;opacity:.75}
+.side-nav a.on svg{opacity:1}
+.ic svg{width:18px;height:18px}
+.iconbtn svg{width:16px;height:16px;vertical-align:-3px}
+/* primeiro acesso */
+.guide-sec{margin-bottom:16px}
+.guide-sec>h2{margin-bottom:8px}
+.guide-sec .steps{margin-top:4px}

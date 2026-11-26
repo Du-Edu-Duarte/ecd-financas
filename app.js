@@ -2,6 +2,7 @@
 // ECD Tecnologia · github.com/Du-Edu-Duarte
 import { configureAuth, guard, authRoute, me, AUTH_ROUTES, takeWelcome } from './ecd-auth.js';
 import { readComprovante } from './comprovante.js';
+import { ic } from './icons.js';
 const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
 configureAuth({ name: 'ECD Finanças', tagline: 'Seu dinheiro com clareza: o que entra, o que sai e o que sobra.', bullets: ['Contas a pagar e receber no mesmo lugar', 'Previsão dos próximos meses', 'Relatórios em PDF e Excel'], home: '#/' });
 
@@ -241,7 +242,7 @@ function Visao() {
   const months = Array.from({ length: 6 }, (_, i) => addMonths(cur, i - 5)).concat([addMonths(cur, 1), addMonths(cur, 2)]);
   const item = l => { const d = l.venc.split('-'); return `<div class="it"><div class="dd"><b>${d[2]}</b><small>${monthName(ymOf(l.venc), true)}</small></div><div><b>${esc(l.desc)}</b><div class="mut sm">${l.fatura ? `${l.itens.length} compras no cartão` : esc(cat(l.categoria).nome)}${contato(l.contato) ? ' · ' + esc(contato(l.contato).nome) : ''}</div></div><div style="text-align:right"><div class="amt ${l.tipo === 'entrada' ? 'pos' : ''}">${money(l.valor)}</div>${stBtn(l)}</div></div>`; };
   view().innerHTML = `
-  <div class="head"><div><div class="eyebrow">${empresa() ? 'Fluxo de caixa' : 'Finanças pessoais'} · ${esc(S.nome)}</div><h1>${empresa() ? 'Seu caixa, com clareza.' : 'Seu dinheiro, com clareza.'}</h1><p class="mut" style="margin:6px 0 0">O que entra, o que sai e o que sobra, hoje e nos próximos meses.</p></div>${monthNav()}</div>
+  <div class="head"><div><div class="eyebrow">${empresa() ? 'Fluxo de caixa' : 'Finanças pessoais'} · ${esc(S.nome)}</div><h1>${empresa() ? 'Visão geral da empresa' : 'Visão geral'}</h1><p class="mut" style="margin:6px 0 0">O que entra, o que sai e o que sobra, hoje e nos próximos meses.</p></div>${monthNav()}</div>
   <div class="kpis fin">
     <div class="card kpi"><small>Saldo hoje</small><b class="${saldo < 0 ? 'neg' : ''}">${money(saldo)}</b><div class="sub">tudo o que já foi pago e recebido</div></div>
     <div class="card kpi ok"><small>Entradas do mês</small><b>${money(r.entradas)}</b><div class="sub">${money(r.entPagas)} já recebido</div></div>
@@ -267,7 +268,7 @@ function Lancamentos() {
   let rows = [...r.ls.filter(l => !l.fatura), ...cardIt].sort((a, b) => a.venc.localeCompare(b.venc));
   const q = norm(LF.q); rows = rows.filter(l => (LF.tipo === 'all' || l.tipo === LF.tipo) && (LF.st === 'all' || statusOf(l)[0] === LF.st) && (LF.cat === 'all' || l.categoria === LF.cat) && (LF.ct === 'all' || l.contato === LF.ct) && (!q || norm([l.desc, cat(l.categoria).nome, contato(l.contato)?.nome, l.obs].join(' ')).includes(q)));
   view().innerHTML = `
-  <div class="head"><div><div class="eyebrow">Lançamentos</div><h1>Cada movimento, no lugar.</h1></div><div class="row">${monthNav()}<button class="btn" id="csv">↓ Excel (CSV)</button><button class="btn primary" id="nl">+ Lançamento</button></div></div>
+  <div class="head"><div><div class="eyebrow">Lançamentos</div><h1>Lançamentos</h1></div><div class="row">${monthNav()}<button class="btn" id="csv">↓ Excel (CSV)</button><button class="btn primary" id="nl">+ Lançamento</button></div></div>
   <div class="row filters">
     <input class="search" id="q" placeholder="Buscar descrição, categoria${empresa() ? ', cliente ou fornecedor' : ''}" value="${esc(LF.q)}">
     <select class="sel" id="fT"><option value="all">Entradas e saídas</option><option value="entrada" ${LF.tipo === 'entrada' ? 'selected' : ''}>Só entradas</option><option value="saida" ${LF.tipo === 'saida' ? 'selected' : ''}>Só saídas</option></select>
@@ -276,11 +277,11 @@ function Lancamentos() {
     ${empresa() ? `<select class="sel" id="fK"><option value="all">Clientes e fornecedores</option>${S.contatos.map(c => `<option value="${c.id}" ${LF.ct === c.id ? 'selected' : ''}>${esc(c.nome)}</option>`).join('')}</select>` : ''}
   </div>
   <div class="card" style="overflow:hidden">${rows.length ? `<table class="list"><thead><tr><th>Descrição</th><th class="hide-m">Vencimento</th><th style="text-align:right">Valor</th><th>Situação</th><th></th></tr></thead><tbody>
-  ${rows.map(l => `<tr data-e="${l.id}"><td><div class="lrow"><span class="ic ${l.tipo === 'entrada' ? 'in' : 'out'}">${l.tipo === 'entrada' ? '↙' : '↗'}</span><div><b>${esc(l.desc)}</b>${l.parcela ? ` <span class="chip">${l.parcela.n}/${l.parcela.total}</span>` : ''}<div class="chips" style="margin-top:3px"><span class="mut sm">${esc(cat(l.categoria).nome)}</span>${contato(l.contato) ? `<span class="mut sm">· ${esc(contato(l.contato).nome)}</span>` : ''}${centro(l.centro) ? `<span class="mut sm">· ${esc(centro(l.centro).nome)}</span>` : ''}${l.recId ? '<span class="mut sm">· fixa</span>' : ''}${l.cartao ? `<span class="mut sm">· ▭ ${esc(cartao(l.cartao)?.nome)}</span>` : ''}</div></div></div></td>
+  ${rows.map(l => `<tr data-e="${l.id}"><td><div class="lrow"><span class="ic ${l.tipo === 'entrada' ? 'in' : 'out'}">${l.tipo === 'entrada' ? ic('down') : ic('up')}</span><div><b>${esc(l.desc)}</b>${l.parcela ? ` <span class="chip">${l.parcela.n}/${l.parcela.total}</span>` : ''}<div class="chips" style="margin-top:3px"><span class="mut sm">${esc(cat(l.categoria).nome)}</span>${contato(l.contato) ? `<span class="mut sm">· ${esc(contato(l.contato).nome)}</span>` : ''}${centro(l.centro) ? `<span class="mut sm">· ${esc(centro(l.centro).nome)}</span>` : ''}${l.recId ? '<span class="mut sm">· fixa</span>' : ''}${l.cartao ? `<span class="mut sm">· ▭ ${esc(cartao(l.cartao)?.nome)}</span>` : ''}</div></div></div></td>
     <td class="hide-m mut sm">${fmtD(l.venc)}${l.pago ? `<div>pago ${fmtD(l.pago.data)}${l.pago.por ? ' · ' + esc(l.pago.por) : ''}</div>` : ''}</td>
     <td style="text-align:right" class="amt ${l.tipo === 'entrada' ? 'pos' : ''}">${l.tipo === 'entrada' ? '+' : '−'} ${money(valorReal(l))}${l.pago && l.pago.valor !== l.valor ? `<div class="mut sm" style="font-weight:500">previsto ${money(l.valor)}</div>` : ''}</td>
     <td>${l.cartao ? '<span class="chip">na fatura</span>' : stBtn(l)}</td>
-    <td style="text-align:right;white-space:nowrap">${l.anexo ? `<button class="iconbtn" data-ax="${l.id}" title="Ver comprovante">📎</button>` : ''}<button class="iconbtn" title="Editar">✎</button></td></tr>`).join('')}
+    <td style="text-align:right;white-space:nowrap">${l.anexo ? `<button class="iconbtn" data-ax="${l.id}" title="Ver comprovante">${ic('paperclip')}</button>` : ''}<button class="iconbtn" title="Editar">${ic('pencil')}</button></td></tr>`).join('')}
   </tbody></table>` : '<div class="empty">Nenhum lançamento com esses filtros.</div>'}</div>`;
   bindMonth(Lancamentos); bindPay();
   const qq = $('#q'); qq.oninput = () => { LF.q = qq.value; clearTimeout(qq._t); qq._t = setTimeout(() => { Lancamentos(); const n = $('#q'); n.focus(); n.setSelectionRange(n.value.length, n.value.length); }, 220); };
@@ -296,8 +297,8 @@ function exportCSV(rows, name) {
   download('﻿' + [h.map(q).join(';'), ...lines].join('\r\n'), name, 'text/csv;charset=utf-8'); toast('Planilha baixada: abre direto no Excel');
 }
 function Fixas() {
-  view().innerHTML = `<div class="head"><div><div class="eyebrow">Contas fixas</div><h1>Todo mês, organizado.</h1><p class="mut" style="margin:6px 0 0">Elas entram sozinhas em cada mês. Mudar o valor vale para os próximos meses; os meses que já passaram ficam como estão.</p></div><button class="btn primary" id="nf">+ Conta fixa</button></div>
-  <div class="g3">${S.recorrentes.map(r => `<div class="card pad"><div class="row between"><span class="ic ${r.tipo === 'entrada' ? 'in' : 'out'}">${r.tipo === 'entrada' ? '↙' : '↻'}</span><span class="mut sm">todo dia ${r.dia}</span></div><h3 style="margin-top:12px">${esc(r.desc)}</h3><div class="amt" style="font-size:22px;margin:4px 0">${r.percent ? `${r.percent.p}% de ${esc(S.recorrentes.find(x => x.id === r.percent.de)?.desc || '')}` : money(r.valor)}</div><div class="mut sm">${esc(cat(r.categoria).nome)}${contato(r.contato) ? ' · ' + esc(contato(r.contato).nome) : ''}${r.fim ? ' · até ' + monthName(r.fim) : ''}</div><div class="row" style="margin-top:12px"><button class="btn sm" data-ed="${r.id}">Editar</button><button class="btn sm" data-end="${r.id}">Encerrar</button></div></div>`).join('')}</div>`;
+  view().innerHTML = `<div class="head"><div><div class="eyebrow">Contas fixas</div><h1>Contas fixas</h1><p class="mut" style="margin:6px 0 0">Elas entram sozinhas em cada mês. Mudar o valor vale para os próximos meses; os meses que já passaram ficam como estão.</p></div><button class="btn primary" id="nf">+ Conta fixa</button></div>
+  <div class="g3">${S.recorrentes.map(r => `<div class="card pad"><div class="row between"><span class="ic ${r.tipo === 'entrada' ? 'in' : 'out'}">${r.tipo === 'entrada' ? ic('down') : ic('repeat')}</span><span class="mut sm">todo dia ${r.dia}</span></div><h3 style="margin-top:12px">${esc(r.desc)}</h3><div class="amt" style="font-size:22px;margin:4px 0">${r.percent ? `${r.percent.p}% de ${esc(S.recorrentes.find(x => x.id === r.percent.de)?.desc || '')}` : money(r.valor)}</div><div class="mut sm">${esc(cat(r.categoria).nome)}${contato(r.contato) ? ' · ' + esc(contato(r.contato).nome) : ''}${r.fim ? ' · até ' + monthName(r.fim) : ''}</div><div class="row" style="margin-top:12px"><button class="btn sm" data-ed="${r.id}">Editar</button><button class="btn sm" data-end="${r.id}">Encerrar</button></div></div>`).join('')}</div>`;
   $('#nf').onclick = () => { editLanc(null, {}); setTimeout(() => { const f = $('#fL'); f.forma.value = 'fixa'; f.forma.onchange(); }, 40); };
   $$('[data-ed]').forEach(b => b.onclick = () => {
     const r = S.recorrentes.find(x => x.id === b.dataset.ed);
@@ -311,7 +312,7 @@ function Fixas() {
 }
 function Cartoes() {
   const cur = YM;
-  view().innerHTML = `<div class="head"><div><div class="eyebrow">Cartões de crédito</div><h1>Faturas sem surpresa.</h1><p class="mut" style="margin:6px 0 0">Compras depois do fechamento vão para a fatura seguinte. Parcelas aparecem em cada mês.</p></div><div class="row">${monthNav()}<button class="btn primary" id="nc">+ Cartão</button></div></div>
+  view().innerHTML = `<div class="head"><div><div class="eyebrow">Cartões de crédito</div><h1>Cartões</h1><p class="mut" style="margin:6px 0 0">Compras depois do fechamento vão para a fatura seguinte. Parcelas aparecem em cada mês.</p></div><div class="row">${monthNav()}<button class="btn primary" id="nc">+ Cartão</button></div></div>
   <div class="g3">${S.cartoes.map(c => { const f = faturas(cur).find(x => x.cartaoId === c.id); const usado = S.lancamentos.filter(l => l.cartao === c.id && !(S.faturasPagas || {})[c.id + ':' + faturaYm(c, l.venc)]).reduce((a, l) => a + l.valor, 0);
     return `<div><div class="ccard"><div class="row between"><b style="font-size:18px">${esc(c.nome)}</b><span>▭</span></div><div><small>Fatura de ${monthName(cur)}</small><div style="font-size:28px;font-weight:800">${money(f?.valor || 0)}</div><small>fecha dia ${c.fechamento} · vence dia ${c.vencimento}</small></div></div>
       <div class="card pad" style="margin-top:10px"><div class="row between sm"><span>Limite usado</span><b>${money(usado)} de ${money(c.limite)}</b></div><div class="bar ${usado / c.limite > .8 ? 'warn' : ''}"><i style="width:${Math.min(100, usado / c.limite * 100)}%"></i></div>
@@ -322,7 +323,7 @@ function Cartoes() {
   $('#nc').onclick = () => { const md = modal(`<h2 style="margin-bottom:12px">Novo cartão</h2><form id="fC2" class="formgrid"><label class="f full">Nome<input name="nome" required placeholder="Ex.: Cartão Empresa"></label><label class="f">Dia do fechamento<input name="fe" type="number" min="1" max="31" value="25"></label><label class="f">Dia do vencimento<input name="ve" type="number" min="1" max="31" value="5"></label><label class="f full">Limite (R$)<input name="li" value="5.000,00"></label><div class="row full" style="justify-content:flex-end"><button type="button" class="btn" data-x>Cancelar</button><button class="btn primary">Salvar</button></div></form>`, 480); $('[data-x]', md).onclick = closeModal; $('#fC2').onsubmit = e => { e.preventDefault(); const f = e.target; S.cartoes.push({ id: uid(), nome: f.nome.value, fechamento: +f.fe.value, vencimento: +f.ve.value, limite: parseMoney(f.li.value) }); save(); closeModal(); Cartoes(); }; };
 }
 function Metas() {
-  view().innerHTML = `<div class="head"><div><div class="eyebrow">Metas e reservas</div><h1>Um passo de cada vez.</h1><p class="mut" style="margin:6px 0 0">Guarde dinheiro para um objetivo e acompanhe quanto falta.</p></div><button class="btn primary" id="nm">+ Meta</button></div>
+  view().innerHTML = `<div class="head"><div><div class="eyebrow">Metas e reservas</div><h1>Metas</h1><p class="mut" style="margin:6px 0 0">Guarde dinheiro para um objetivo e acompanhe quanto falta.</p></div><button class="btn primary" id="nm">+ Meta</button></div>
   <div class="g3">${S.metas.map(m => { const p = m.atual / m.alvo; const falta = Math.max(0, m.alvo - m.atual); const meses = m.prazo ? Math.max(1, (new Date(m.prazo + '-15') - new Date()) / (30.4 * 864e5)) : 0;
     return `<div class="card pad meta-c"><div class="row between"><h3>${esc(m.nome)}</h3><span class="badge ${p >= 1 ? 'b-ok' : 'b-info'}">${Math.round(p * 100)}%</span></div><div class="big">${money(m.atual)}</div><div class="mut sm">de ${money(m.alvo)}${m.prazo ? ` · até ${monthName(m.prazo)}` : ''}</div><div class="bar ok"><i style="width:${Math.min(100, p * 100)}%"></i></div>
       <div class="sm">${p >= 1 ? '🎉 Meta alcançada!' : `Faltam <b>${money(falta)}</b>${meses ? ` · guarde cerca de <b>${money(falta / Math.ceil(meses))}</b> por mês` : ''}`}</div><div class="row"><button class="btn sm primary" data-ap="${m.id}">+ Guardar</button><button class="btn sm" data-rt="${m.id}">Retirar</button><button class="link sm mut" data-dm="${m.id}">Excluir</button></div></div>`; }).join('')}</div>`;
@@ -340,7 +341,7 @@ function dadosRelatorio(ym) {
 function Relatorios() {
   const d = dadosRelatorio(YM); const res = d.tE - d.tS;
   const tab = (t, arr, tot) => `<div class="card pad"><h3 style="margin-bottom:10px">${t}</h3>${arr.length ? arr.map(([k, v]) => `<div class="lim"><div class="row"><span>${esc(k)}</span><span class="amt">${money(v)}</span></div><div class="bar"><i style="width:${tot ? v / tot * 100 : 0}%"></i></div></div>`).join('') : '<p class="mut sm">Sem dados.</p>'}</div>`;
-  view().innerHTML = `<div class="head"><div><div class="eyebrow">Relatórios</div><h1>O mês em números.</h1><p class="mut" style="margin:6px 0 0">Valores pela competência: conta a data de vencimento ou da compra.</p></div><div class="row">${monthNav()}<button class="btn" id="rx">↓ Excel (CSV)</button><button class="btn dark" id="rp">↓ Relatório em PDF</button></div></div>
+  view().innerHTML = `<div class="head"><div><div class="eyebrow">Relatórios</div><h1>Relatórios</h1><p class="mut" style="margin:6px 0 0">Valores pela competência: conta a data de vencimento ou da compra.</p></div><div class="row">${monthNav()}<button class="btn" id="rx">↓ Excel (CSV)</button><button class="btn dark" id="rp">↓ Relatório em PDF</button></div></div>
   <div class="g2"><div class="card pad"><h2 style="margin-bottom:10px">${empresa() ? 'Resultado do mês (DRE simplificado)' : 'Resumo do mês'}</h2><table class="dre" style="width:100%;border-collapse:collapse">
     <tr><td><b>${empresa() ? 'Receitas' : 'Entradas'}</b></td><td class="pos amt">${money(d.tE)}</td></tr>${d.catE.map(([k, v]) => `<tr><td class="mut" style="padding-left:24px">${esc(k)}</td><td>${money(v)}</td></tr>`).join('')}
     <tr><td><b>${empresa() ? 'Despesas' : 'Saídas'}</b></td><td class="neg amt">− ${money(d.tS)}</td></tr>${d.catS.map(([k, v]) => `<tr><td class="mut" style="padding-left:24px">${esc(k)}</td><td>${money(v)}</td></tr>`).join('')}
@@ -385,7 +386,7 @@ function parseCSV(txt) {
 }
 let IMP = null;
 function Importar() {
-  view().innerHTML = `<div class="head"><div><div class="eyebrow">Importar extrato</div><h1>Do banco para cá, sem digitar.</h1><p class="mut" style="margin:6px 0 0">Envie o extrato em <b>OFX</b> ou <b>CSV</b>, que todo banco permite baixar. As categorias são escolhidas pelas suas regras e você confere antes de importar.</p></div></div>
+  view().innerHTML = `<div class="head"><div><div class="eyebrow">Importar extrato</div><h1>Importar extrato</h1><p class="mut" style="margin:6px 0 0">Envie o extrato em <b>OFX</b> ou <b>CSV</b>, que todo banco permite baixar. As categorias são escolhidas pelas suas regras e você confere antes de importar.</p></div></div>
   <div class="card pad"><label class="drop" style="display:block"><b>Escolher arquivo do extrato</b><br><span class="mut sm">.ofx ou .csv</span><input type="file" id="fx" accept=".ofx,.csv,.txt" hidden></label>
   <div class="row" style="margin-top:12px"><button class="btn sm" id="ex">Usar um extrato de exemplo</button><a class="sm" href="#/ajustes">Ver regras de categoria →</a></div></div><div id="impArea" style="margin-top:16px"></div>`;
   const show = (items, nome) => {
@@ -403,7 +404,7 @@ function Importar() {
 /* ---------------- ajustes ---------------- */
 function Ajustes() {
   const tagList = (arr, key, extra = () => '') => `<div class="row" style="gap:8px">${arr.map(x => `<span class="tagx">${esc(x.nome)}${extra(x)}<button data-rm="${key}:${x.id}">✕</button></span>`).join('')}</div>`;
-  view().innerHTML = `<div class="head"><div><div class="eyebrow">Ajustes</div><h1>Do seu jeito.</h1></div>${me()?.role === 'admin' ? '<a class="btn" href="#/config">Usuários, cadastro e convites →</a>' : ''}</div>
+  view().innerHTML = `<div class="head"><div><div class="eyebrow">Ajustes</div><h1>Ajustes</h1></div>${me()?.role === 'admin' ? '<a class="btn" href="#/config">Usuários, cadastro e convites →</a>' : ''}</div>
   <div class="g2"><div class="grid">
     <div class="card pad grid"><h2>Geral</h2><div class="formgrid"><label class="f">Nome<input id="aN" value="${esc(S.nome)}"></label><label class="f">Modo<select id="aM"><option value="empresa" ${empresa() ? 'selected' : ''}>Empresa (clientes, fornecedores e centro de custo)</option><option value="pessoal" ${!empresa() ? 'selected' : ''}>Pessoal / família</option></select></label>
       <label class="f">Saldo inicial (R$)<input id="aS" value="${String(S.saldoInicial.valor.toFixed(2)).replace('.', ',')}"></label><label class="f">A partir de<input id="aD" type="date" value="${S.saldoInicial.data}"></label></div><p class="hint" style="margin:0">Todas as pessoas com acesso veem e lançam no mesmo caixa. Cada lançamento mostra quem fez.</p></div>
@@ -481,20 +482,57 @@ const demoBar = () => { const b = $('.demo-bar'); const r = location.hash.replac
 function welcomeModal() {
   const md = modal(`<div class="eyebrow">Acesso liberado</div><h2 style="margin:4px 0 8px">Bem-vindo ao ECD Finanças, ${esc(me().nome.split(' ')[0])}!</h2><p class="mut" style="margin:0 0 18px">Como você quer começar?</p>
     <div class="grid"><button class="btn primary" id="wZero" style="justify-content:flex-start;text-align:left;padding:14px 16px"><span><b>Começar do zero com o meu dinheiro</b><br><small style="opacity:.8">Apaga os exemplos e cria categorias pessoais prontas</small></span></button>
-    <button class="btn" id="wDemo" style="justify-content:flex-start;text-align:left;padding:14px 16px"><span><b>Explorar os exemplos primeiro</b><br><small class="mut">Você pode zerar depois em Ajustes</small></span></button></div>`, 520);
+    <button class="btn" id="wDemo" style="justify-content:flex-start;text-align:left;padding:14px 16px"><span><b>Explorar os exemplos primeiro</b><br><small class="mut">Você pode zerar depois em Ajustes</small></span></button></div><p style="margin:16px 0 0"><a href="#/comecar" style="color:var(--ink2);font-weight:600">Ver o passo a passo do primeiro acesso</a></p>`, 520);
   $('#wZero', md).onclick = async () => { closeModal(); await startBlank(); toast('Pronto! Comece lançando seu saldo em Ajustes ou o primeiro gasto em + Lançamento'); };
   $('#wDemo', md).onclick = closeModal;
 }
 
+/* ---------------- primeiro acesso: passo a passo ---------------- */
+const GUIA = [
+  ['Entrar no sistema', [
+    ['Crie sua conta', 'Na tela de entrada, toque em "Criar conta". Informe nome, setor, e-mail e senha. Se houver perguntas extras, elas aparecem no mesmo formulário.'],
+    ['Confirme o e-mail', 'Digite o código que chega no seu e-mail. Sem o código, a conta ainda não está pronta.'],
+    ['Aguarde a liberação', 'O administrador recebe o pedido e libera o acesso. Enquanto isso, a tela mostra que o cadastro está em análise. Depois de liberado, entre de novo com e-mail e senha.'],
+  ]],
+  ['Preparar o sistema', [
+    ['Escolha como começar', '"Começar do zero com o meu dinheiro" apaga os exemplos e cria categorias prontas. "Explorar os exemplos primeiro" mostra dados fictícios, que podem ser apagados depois em Ajustes.'],
+    ['Informe o saldo inicial', 'Em Ajustes, coloque quanto você tem hoje nas contas. Essa é a base do fluxo de caixa.'],
+    ['Revise as categorias', 'Em Ajustes, renomeie as categorias e defina um limite mensal naquelas que quiser acompanhar.'],
+  ]],
+  ['Uso do dia a dia', [
+    ['Lance entradas e saídas', 'Toque em "+ Lançamento", escolha entrada ou saída, valor, data e categoria. Se o dinheiro já entrou ou saiu, marque a opção de já pago ou recebido.'],
+    ['Anexe o comprovante', 'No topo do lançamento, envie o PDF ou a foto do Pix, da transferência ou do boleto. O sistema preenche tipo, valor, data, contraparte e categoria. Confira e salve.'],
+    ['Crie itens na hora', 'Em qualquer lista (categoria, cliente, fornecedor, centro de custo), escolha "+ Nova…", digite o nome e toque em Adicionar.'],
+    ['Cadastre o que se repete', 'Em Contas fixas, coloque aluguel, internet, salário e outras contas que se repetem todo mês. Elas aparecem sozinhas nos meses seguintes.'],
+    ['Acompanhe cartões e metas', 'Cartões mostra a fatura de cada mês. Metas separa dinheiro para um objetivo, com valor e prazo.'],
+    ['Importe o extrato e gere relatórios', 'Em Importar extrato, envie o arquivo do banco para lançar várias movimentações de uma vez. Em Relatórios, baixe o resumo do mês em PDF ou em Excel.'],
+  ]],
+];
+function Comecar() {
+  let n = 0;
+  view().innerHTML = `
+    <div class="eyebrow">Primeiro acesso</div>
+    <h1>Como usar o ECD Finanças</h1>
+    <p class="mut" style="margin:6px 0 24px;max-width:640px">Siga os passos na ordem. Leva cerca de dez minutos e, depois disso, o sistema está pronto para o dia a dia.</p>
+    ${GUIA.map(([titulo, passos]) => `
+      <section class="card pad guide-sec">
+        <h2>${titulo}</h2>
+        <div class="steps">${passos.map(([t, d]) => { n++; return `<div class="step"><span class="n">${n}</span><div><h3>${t}</h3><p class="mut" style="margin:4px 0 0">${d}</p></div></div>`; }).join('')}</div>
+      </section>`).join('')}
+    <p class="mut sm">Dúvidas sobre o acesso? Fale com o administrador do sistema.</p>`;
+}
+
 /* ---------------- roteador ---------------- */
-const ROUTES = { '': Visao, lancamentos: Lancamentos, fixas: Fixas, cartoes: Cartoes, metas: Metas, relatorios: Relatorios, importar: Importar, ajustes: Ajustes };
+const ROUTES = { '': Visao, lancamentos: Lancamentos, fixas: Fixas, cartoes: Cartoes, metas: Metas, relatorios: Relatorios, importar: Importar, ajustes: Ajustes, comecar: Comecar };
 async function route() {
   const h = location.hash.replace(/^#\/?/, '').split('?')[0].split('/');
-  if (!guard(h[0])) return;
+  if (!guard(h[0], ['comecar'])) return;
   const logged = !!me(); document.body.classList.toggle('noside', !logged || AUTH_ROUTES.includes(h[0])); demoBar();
   $$('#sideNav a').forEach(a => a.classList.toggle('on', a.dataset.r === h[0])); $('#modal').hidden = true; window.scrollTo(0, 0);
   try { if (authRoute(h[0])) return; (ROUTES[h[0]] || Visao)(); if (takeWelcome() && !S.real) welcomeModal(); } catch (e) { console.error(e); view().innerHTML = `<div class="card pad"><h2>Algo deu errado</h2><p class="mut">${esc(e.message || e)}</p></div>`; }
 }
+const NAV = [['', 'Visão geral', 'home'], ['lancamentos', 'Lançamentos', 'arrows'], ['fixas', 'Contas fixas', 'repeat'], ['cartoes', 'Cartões', 'card'], ['metas', 'Metas', 'target'], ['relatorios', 'Relatórios', 'file'], ['importar', 'Importar extrato', 'upload'], ['ajustes', 'Ajustes', 'sliders'], ['comecar', 'Como usar', 'book']];
+$('#sideNav').innerHTML = NAV.map(([r, l, i]) => `<a href="#/${r}" data-r="${r}">${ic(i)}<span>${l}</span></a>`).join('');
 $('#newTop').onclick = () => me() && editLanc();
 $('#resetDemo').onclick = async () => { if (!(await confirmBox('Restaurar exemplos?', 'Apaga os lançamentos deste navegador e recoloca os dados fictícios de exemplo.', 'Restaurar'))) return; seedState(); await idb('kv', 'readwrite', s => s.put(S, 'state')); YM = ymOf(today()); location.hash = '#/'; route(); };
 window.addEventListener('hashchange', route);

@@ -186,8 +186,8 @@ label.f input:focus,label.f select:focus,label.f textarea:focus,.search:focus{ou
 
 /* contas */
 .auth{display:grid;grid-template-columns:1fr 1.1fr;gap:0;max-width:1000px;margin:10px auto;border-radius:20px;overflow:hidden;box-shadow:var(--sh);border:1px solid var(--line)}
-.auth-side{background:radial-gradient(500px 400px at 80% 0%,#3a2c12,#15110a 70%);color:#f4efe4;padding:44px;display:flex;flex-direction:column;gap:18px}
-.auth-side img{width:64px;height:64px;border-radius:50%;box-shadow:0 0 60px rgba(226,180,84,.4)}
+.auth-side{background:#15110a;color:#f4efe4;padding:44px;display:flex;flex-direction:column;gap:18px}
+.auth-side img{width:64px;height:64px;border-radius:50%;box-shadow:none}
 .auth-side h2{font-size:30px;font-weight:800;letter-spacing:-.03em;line-height:1.15}
 .auth-side ul{margin:0;padding:0;list-style:none;display:grid;gap:10px;color:#d9d0bd}
 .auth-side li::before{content:"✓";color:var(--gold);font-weight:800;margin-right:10px}
